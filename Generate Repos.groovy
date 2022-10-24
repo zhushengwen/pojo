@@ -34,11 +34,14 @@ def getPackageName(dir) {
 }
 
 def generate(out, className, table) {
+    def s = packageName.split(/\./)
+    //s.each { ele -> out.println ele }
+    def modelClassName = s[0..-2].join(".") + ".model." + className
     out.println "package $packageName"
     out.println ""
     out.println "import org.springframework.stereotype.Repository;"
     out.println "import org.springframework.data.jpa.repository.JpaRepository;"
-    out.println "import com.jeiat.itapi.model.$className;"
+    out.println "import $modelClassName;"
 
     out.println ""
     out.println "/**\n" +
