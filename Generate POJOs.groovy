@@ -62,6 +62,8 @@ def generate(out, className, fields, table) {
 
     if (types.contains("Date")) {
         out.println "import java.util.Date;"
+        out.println "import com.fasterxml.jackson.annotation.JsonFormat;"
+        out.println "import org.springframework.format.annotation.DateTimeFormat;"
     }
 
     if (types.contains("InputStream")) {
@@ -126,10 +128,10 @@ def calcFields(table) {
         def colName = col.getName()
         def comm = [
                 colName : col.getName(),
-                name    : col.getName(),//javaName(col.getName(), false),
+                name    : javaName(col.getName(), false),
                 type    : typeStr,
                 commoent: col.getComment(),
-                annos   : "    @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + ")",
+                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + ")",
                 isId : primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef()),
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
