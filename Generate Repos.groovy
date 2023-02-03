@@ -15,7 +15,7 @@ packageName = ""
 
 
 
-FILES.chooseDirectoryAndSave("Choose directory", "Choose where to store generated files") { dir ->
+FILES.chooseDirectoryAndSave("Choose repo directory", "Choose where to store generated files") { dir ->
     SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 }
 
@@ -41,15 +41,16 @@ def generate(out, className, table) {
     out.println ""
     out.println "import org.springframework.stereotype.Repository;"
     out.println "import org.springframework.data.jpa.repository.JpaRepository;"
+    out.println "import org.springframework.data.jpa.repository.JpaSpecificationExecutor;"
     out.println "import $modelClassName;"
 
     out.println ""
     out.println "/**\n" +
-          " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-          " */"
+            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
+            " */"
     out.println ""
     out.println "@Repository"
-    out.println "public interface ${className}Repository extends JpaRepository<$className, Long> {"
+    out.println "public interface ${className}Repository extends JpaSpecificationExecutor<$className>, JpaRepository<$className, Long> {"
     out.println ""
     out.println ""
     out.println "}"
@@ -75,4 +76,3 @@ def javaName(str, capitalize) {
 def isNotEmpty(content) {
     return content != null && content.toString().trim().length() > 0
 }
-

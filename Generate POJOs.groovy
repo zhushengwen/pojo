@@ -23,7 +23,7 @@ typeMapping = [
 ]
 
 
-FILES.chooseDirectoryAndSave("Choose directory", "Choose where to store generated files") { dir ->
+FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
     SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 }
 
@@ -43,6 +43,11 @@ def getPackageName(dir) {
 }
 
 def generate(out, className, fields, table) {
+    def count = 0
+    fields.each() {
+        if(contains(it.colName)) count ++
+    }
+
     out.println "package $packageName"
     out.println ""
     out.println "import javax.persistence.*;"
@@ -54,10 +59,16 @@ def generate(out, className, fields, table) {
 //  out.println "import lombok.ToString;"
     out.println "import lombok.Data;"
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
+    if(count == 4){
+        out.println "import com.jeiat.itapi.base.BaseEntity;"
+        out.println "import lombok.EqualsAndHashCode;"
+    }
     Set types = new HashSet()
 
     fields.each() {
-        types.add(it.type)
+        if (count != 4 || !contains(it.colName)){
+            types.add(it.type)
+        }
     }
 
     if (types.contains("Date")) {
@@ -81,25 +92,35 @@ def generate(out, className, fields, table) {
     out.println "@Data"
     out.println "@Entity"
     out.println "@Table(name =\"" + table.getName() + "\")"
-    out.println "public class $className  implements Serializable {"
+    def extendsStr =  ""
+
+    if (count == 4){
+        out.println "@EqualsAndHashCode(callSuper = false)"
+        extendsStr = "extends BaseEntity "
+    }
+
+    out.println "public class $className ${extendsStr}implements Serializable {"
     out.println ""
     out.println genSerialID()
-    fields.each() {
-        out.println ""
-        // 输出注释
-        if (isNotEmpty(it.commoent)) {
-            out.println "    /**"
-            out.println "     * ${it.commoent.toString()}"
-            out.println "     */"
-        }
 
-        if (it.isId) out.println "    @Id"
-        if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
-        if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "")}"
-        if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd HH:mm:ss\",timezone = \"GMT+8\") \n" +
-                "    @DateTimeFormat(pattern = \"yyyy-MM-dd\") "
-        // 输出成员变量
-        out.println "    private ${it.type} ${it.name};"
+    fields.each() {
+        if (count != 4 || !contains(it.colName)){
+            out.println ""
+            // 输出注释
+            if (isNotEmpty(it.commoent)) {
+                out.println "    /**"
+                out.println "     * ${it.commoent.toString()}"
+                out.println "     */"
+            }
+
+            if (it.isId) out.println "    @Id"
+            if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
+            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "")}"
+            if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd HH:mm:ss\",timezone = \"GMT+8\") \n" +
+                    "    @DateTimeFormat(pattern = \"yyyy-MM-dd\") "
+            // 输出成员变量
+            out.println "    private ${it.type} ${it.name};"
+        }
     }
 
     // 输出get/set方法
@@ -126,13 +147,14 @@ def calcFields(table) {
         index ++
         def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
         def colName = col.getName()
+        def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
         def comm = [
                 colName : col.getName(),
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
                 commoent: col.getComment(),
-                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + ")",
-                isId : primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef()),
+                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
+                isId : isId,
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -183,4 +205,8 @@ static String changeStyle(String str, boolean toCamel) {
 static String genSerialID() {
     //return "\tprivate static final long serialVersionUID =  " + Math.abs(new Random().nextLong()) + "L;"
     return "    private static final long serialVersionUID =  1L;"
+}
+
+static boolean contains(String element){
+    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element
 }
