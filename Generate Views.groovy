@@ -80,9 +80,9 @@ def generate(out, className, table) {
                 "    @ApiOperation(\"${anno}列表\")\n" +
                 "    @GetMapping\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    //@ApiImplicitParam(name = \"front_field\", value = \"说明\", dataType = \"integer\", allowableValues = \"0,1\")\n" +
+                "    @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\")\n" +
                 "    public List<${className}> list(\n" +
-                "            //@Spec(path = \"isProduct\", params = \"is_product\", spec = Equal.class)\n" +
+                "            @Spec(path = \"id\", params = \"id\", spec = Equal.class)\n" +
                 "            Specification<${className}> spec) {\n" +
                 "        return ${javaName}Service.get${className}s(spec);\n" +
                 "    }\n" +
