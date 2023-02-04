@@ -16,7 +16,15 @@ modelClassName = ""
 repoClassName = ""
 serviceClassName = ""
 
-
+typeMapping = [
+        (~/(?i)tinyint|smallint|mediumint/)      : "Integer",
+        (~/(?i)int/)                             : "Long",
+        (~/(?i)bool|bit/)                        : "Boolean",
+        (~/(?i)float|double|decimal|real/)       : "Double",
+        (~/(?i)datetime|timestamp|date|time/)    : "Date",
+        (~/(?i)blob|binary|bfile|clob|raw|image/): "InputStream",
+        (~/(?i)/)                                : "String"
+]
 FILES.chooseDirectoryAndSave("Choose rest directory", "Choose where to store generated files") { dir ->
     SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 }
@@ -41,14 +49,17 @@ def getPackageName(dir) {
 }
 
 def generate(out, className, table) {
-
+    def fields = calcFields(table)
+    def count = 0
+    fields.each() {
+        if(contains(it.colName)) count ++
+    }
     def model = table.getName()
     def javaName = javaName(className,false)
     def anno = isNotEmpty(table.getComment()) ? table.getComment() : "模型"
     out.println "package $packageName"
     out.println ""
-    out.println "import com.fasterxml.jackson.databind.node.ObjectNode;\n" +
-                "import com.jeiat.itapi.common.Result;\n" +
+    out.println "import com.jeiat.itapi.common.Result;\n" +
                 "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
                 "import com.jeiat.itapi.modules.pom.model.${className};\n" +
                 "import com.jeiat.itapi.modules.pom.service.${className}Service;\n" +
@@ -61,6 +72,15 @@ def generate(out, className, table) {
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "import org.springframework.security.access.prepost.PreAuthorize;\n" +
                 "import org.springframework.web.bind.annotation.*;"
+    def objType = "ObjectNode"
+    if(count == 4) {
+        out.println "import com.fasterxml.jackson.databind.node.ObjectNode;"
+    }
+    else {
+        out.println "import org.springframework.beans.BeanUtils;"
+        objType = className;
+    }
+
     
     out.println "import java.util.List;"
 
@@ -100,11 +120,18 @@ def generate(out, className, table) {
                 "    @ApiOperation(\"编辑${anno}\")\n" +
                 "    @Log(\"编辑${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public Result<Integer> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody ObjectNode jsonNode) {\n" +
-                "\n" +
-                "        ${javaName}.accept(jsonNode);\n" +
-                "        ${javaName}Service.update${className}(${javaName});\n" +
-                "\n" +
+                "    public Result<Integer> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {\n" +
+                "\n"
+    if(count == 4){
+        out.println "        ${javaName}.accept(jsonNode);\n" +
+                "        ${javaName}Service.update${className}(${javaName});\n"
+    }else{
+        out.println "        jsonNode.setId(${javaName}.getId());\n" +
+                "        BeanUtils.copyProperties(jsonNode,${javaName});\n" +
+                "        ${javaName}Service.update${className}(${javaName});\n"
+    }
+
+    out.println "\n" +
                 "        return Result.ok();\n" +
                 "    }\n" +
                 "\n" +
@@ -137,4 +164,31 @@ def javaName(str, capitalize) {
 
 def isNotEmpty(content) {
     return content != null && content.toString().trim().length() > 0
+}
+
+def calcFields(table) {
+    def primaryKey = DasUtil.getPrimaryKey(table)
+    def index = 0
+    DasUtil.getColumns(table).reduce([]) { fields, col ->
+        def spec = Case.LOWER.apply(col.getDataType().getSpecification())
+        index ++
+        def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
+        def colName = col.getName()
+        def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
+        def comm = [
+                colName : col.getName(),
+                name    : javaName(col.getName(), false),
+                type    : typeStr,
+                commoent: col.getComment(),
+                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
+                isId : isId,
+        ]
+//        if ("id".equals(Case.LOWER.apply(col.getName())))
+//            comm.annos += ["@Id"]
+        fields += [comm]
+    }
+}
+
+static boolean contains(String element){
+    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element
 }
