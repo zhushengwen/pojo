@@ -59,6 +59,8 @@ def generate(out, className, fields, table) {
 //  out.println "import lombok.ToString;"
     out.println "import lombok.Data;"
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
+    out.println "import io.swagger.annotations.ApiModel;"
+    out.println "import io.swagger.annotations.ApiModelProperty;"
     if(count == 4){
         out.println "import com.jeiat.itapi.base.BaseEntity;"
         out.println "import lombok.EqualsAndHashCode;"
@@ -92,6 +94,7 @@ def generate(out, className, fields, table) {
     out.println "@Data"
     out.println "@Entity"
     out.println "@Table(name =\"" + table.getName() + "\")"
+    out.println "@ApiModel(value =\"" + table.getComment() + "模型\")"
     def extendsStr =  ""
 
     if (count == 4){
@@ -119,6 +122,9 @@ def generate(out, className, fields, table) {
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd HH:mm:ss\",timezone = \"GMT+8\") \n" +
                     "    @DateTimeFormat(pattern = \"yyyy-MM-dd\") "
             // 输出成员变量
+            if (isNotEmpty(it.commoent)) {
+                out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
+            }
             out.println "    private ${it.type} ${it.name};"
         }
     }
