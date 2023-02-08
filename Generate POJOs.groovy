@@ -58,6 +58,7 @@ def generate(out, className, fields, table) {
 //  out.println "import lombok.Setter;"
 //  out.println "import lombok.ToString;"
     out.println "import lombok.Data;"
+    out.println "import com.fasterxml.jackson.annotation.JsonAlias;"
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
@@ -124,6 +125,9 @@ def generate(out, className, fields, table) {
             // 输出成员变量
             if (isNotEmpty(it.commoent)) {
                 out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
+            }
+            if (!it.isId) {
+                out.println "    @JsonAlias"
             }
             out.println "    private ${it.type} ${it.name};"
         }
