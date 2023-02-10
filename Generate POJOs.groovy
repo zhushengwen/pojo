@@ -79,7 +79,10 @@ def generate(out, className, fields, table) {
         out.println "import com.fasterxml.jackson.annotation.JsonFormat;"
         out.println "import org.springframework.format.annotation.DateTimeFormat;"
     }
-
+    if (types.contains("Double")) {
+        out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
+        out.println "com.jeiat.itapi.utils.JsonDecimalFormat"
+    }
     if (types.contains("InputStream")) {
         out.println "import java.io.InputStream;"
     }
@@ -129,6 +132,7 @@ def generate(out, className, fields, table) {
             if (!it.isId) {
                 out.println "    @JsonAlias"
             }
+            if (it.type == "Double") out.println "    @JsonSerialize(using = JsonDecimalFormat.class)"
             out.println "    private ${it.type} ${it.name};"
         }
     }

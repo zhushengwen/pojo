@@ -70,10 +70,10 @@ def generate(out, className, table) {
     out.println "    List<$className> get${className}s(Specification<$className> spec);"
     out.println ""
 
-    out.println "    void save${className}(${className} $javaName);"
+    out.println "    ${className} save${className}(${className} $javaName);"
     out.println ""
 
-    out.println "    void update${className}(${className} $javaName);"
+    out.println "    ${className} update${className}(${className} $javaName);"
     out.println ""
 
     out.println "    void delete${className}(Long id);"
@@ -112,13 +112,13 @@ def generateImpl(out, className, table) {
                 "    }"
     out.println ""
     out.println "    @Override\n" +
-                "    public void save${className}(${className} ${javaName}) {\n" +
-                "        ${javaName}Repository.save(${javaName});\n" +
+                "    public ${className} save${className}(${className} ${javaName}) {\n" +
+                "        return ${javaName}Repository.save(${javaName});\n" +
                 "    }\n"
     out.println ""
     out.println "    @Override\n" +
-                "    public void update${className}(${className} ${javaName}) {\n" +
-                "        ${javaName}Repository.save(${javaName});\n" +
+                "    public ${className} update${className}(${className} ${javaName}) {\n" +
+                "        return save${className}(${javaName});\n" +
                 "    }\n"
     out.println ""
     out.println "    @Override\n" +

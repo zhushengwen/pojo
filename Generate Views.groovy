@@ -112,27 +112,25 @@ def generate(out, className, table) {
                 "    @Log(\"增加${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
                 "    public Result<Integer> add(@RequestBody ${className} ${javaName}) {\n" +
-                "        ${javaName}Service.save${className}(${javaName});\n" +
-                "        return Result.ok();\n" +
+                "        ${className} ${javaName}added = ${javaName}Service.save${className}(${javaName});\n" +
+                "        return Result.ok(${javaName}added);\n" +
                 "    }\n" +
                 "\n" +
                 "    @PutMapping(\"{id}\")\n" +
                 "    @ApiOperation(\"编辑${anno}\")\n" +
                 "    @Log(\"编辑${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public Result<Integer> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {\n" +
-                "\n"
+                "    public Result<Integer> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {\n"
     if(count == 4){
         out.println "        ${javaName}.accept(jsonNode);\n" +
-                "        ${javaName}Service.update${className}(${javaName});\n"
+                "        ${className} ${javaName}saved = ${javaName}Service.update${className}(${javaName});\n"
     }else{
         out.println "        jsonNode.setId(${javaName}.getId());\n" +
                 "        BeanUtils.copyProperties(jsonNode,${javaName});\n" +
-                "        ${javaName}Service.update${className}(${javaName});\n"
+                "        ${className} ${javaName}saved = ${javaName}Service.update${className}(${javaName});\n"
     }
 
-    out.println "\n" +
-                "        return Result.ok();\n" +
+    out.println "        return Result.ok(${javaName}saved);\n" +
                 "    }\n" +
                 "\n" +
                 "    @DeleteMapping(\"{id}\")\n" +
