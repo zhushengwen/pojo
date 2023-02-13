@@ -101,10 +101,10 @@ def generate(out, className, table) {
                 "    @GetMapping\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
                 "    @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\")\n" +
-                "    public List<${className}> list(\n" +
+                "    public Result<List<${className}>> list(\n" +
                 "            @Spec(path = \"id\", params = \"id\", spec = Equal.class)\n" +
                 "            Specification<${className}> spec) {\n" +
-                "        return ${javaName}Service.get${className}s(spec);\n" +
+                "        return Result.ok(${javaName}Service.get${className}s(spec));\n" +
                 "    }\n" +
                 "\n" +
                 "    @PostMapping\n" +
