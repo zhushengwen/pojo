@@ -15,9 +15,11 @@ packageName = ""
 
 
 
-FILES.chooseDirectoryAndSave("Choose repo directory", "Choose where to store generated files") { dir ->
-    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
-}
+//FILES.chooseDirectoryAndSave("Choose repo directory", "Choose where to store generated files") { dir ->
+//    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
+//}
+dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\pom\\repo"
+SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
     def className = javaClassName(table.getName(), true)

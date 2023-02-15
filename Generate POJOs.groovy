@@ -23,9 +23,11 @@ typeMapping = [
 ]
 
 
-FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
-    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
-}
+//FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
+//    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
+//}
+dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\pom\\model"
+SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
     def className = javaClassName(table.getName(), true)
@@ -81,7 +83,7 @@ def generate(out, className, fields, table) {
     }
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
-        out.println "com.jeiat.itapi.utils.JsonDecimalFormat"
+        out.println "import com.jeiat.itapi.utils.JsonDecimalFormat;"
     }
     if (types.contains("InputStream")) {
         out.println "import java.io.InputStream;"
