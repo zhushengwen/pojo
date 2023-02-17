@@ -80,7 +80,7 @@ def generate(out, className, table) {
         out.println "import com.fasterxml.jackson.databind.node.ObjectNode;"
     }
     else {
-        out.println "import org.springframework.beans.BeanUtils;"
+        out.println "import com.jeiat.itapi.utils.AppUtils;"
         objType = className;
     }
 
@@ -128,8 +128,7 @@ def generate(out, className, table) {
     if(count == 4){
         out.println "        ${javaName}.accept(jsonNode);"
     }else{
-        out.println "        jsonNode.setId(${javaName}.getId());\n" +
-                "        BeanUtils.copyProperties(jsonNode,${javaName});"
+        out.println "        AppUtils.accept(${javaName}, jsonNode);"
     }
 
     out.println "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
