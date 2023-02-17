@@ -60,13 +60,16 @@ def generate(out, className, table) {
     def anno = isNotEmpty(table.getComment()) ? table.getComment() : "模型"
     out.println "package $packageName"
     out.println ""
-    out.println "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
+    out.println "import com.jeiat.itapi.common.Result;\n" +
+                "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
                 "import com.jeiat.itapi.modules.pom.model.${className};\n" +
                 "import com.jeiat.itapi.modules.pom.service.${className}Service;\n" +
                 "import io.swagger.annotations.Api;\n" +
                 "import io.swagger.annotations.ApiImplicitParam;\n" +
+                "import io.swagger.annotations.ApiImplicitParams;\n" +
                 "import io.swagger.annotations.ApiOperation;\n" +
                 "import net.kaczmarzyk.spring.data.jpa.domain.Equal;\n" +
+                "import net.kaczmarzyk.spring.data.jpa.web.annotation.And;\n" +
                 "import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;\n" +
                 "import org.springframework.beans.factory.annotation.Autowired;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
@@ -100,43 +103,45 @@ def generate(out, className, table) {
                 "    @ApiOperation(\"${anno}列表\")\n" +
                 "    @GetMapping\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\")\n" +
-                "    public List<${className}> list(\n" +
-                "            @Spec(path = \"id\", params = \"id\", spec = Equal.class)\n" +
-                "            Specification<${className}> spec) {\n" +
-                "        return ${javaName}Service.get${className}s(spec);\n" +
+                "    @ApiImplicitParams({\n" +
+                "            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),\n" +
+                "    })\n" +
+                "    public Result<List<${className}>> list(@And({\n" +
+                "            @Spec(path = \"id\", params = \"id\", spec = Equal.class),\n" +
+                "    }) Specification<${className}> spec) {\n" +
+                "        return Result.ok(${javaName}Service.get${className}s(spec));\n" +
                 "    }\n" +
                 "\n" +
                 "    @PostMapping\n" +
                 "    @ApiOperation(\"增加${anno}\")\n" +
                 "    @Log(\"增加${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public ${className} add(@RequestBody ${className} ${javaName}) {\n" +
-                "        return ${javaName}Service.save${className}(${javaName});\n" +
+                "    public Result<${className}> add(@RequestBody ${className} ${javaName}) {\n" +
+                "        return Result.ok(${javaName}Service.save${className}(${javaName}));\n" +
                 "    }\n" +
                 "\n" +
                 "    @PutMapping(\"{id}\")\n" +
                 "    @ApiOperation(\"编辑${anno}\")\n" +
                 "    @Log(\"编辑${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public ${className} update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {"
+                "    public Result<${className}> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {"
     if(count == 4){
-        out.println "        ${javaName}.accept(jsonNode);\n" +
-                "        return ${javaName}Service.update${className}(${javaName});"
+        out.println "        ${javaName}.accept(jsonNode);"
     }else{
         out.println "        jsonNode.setId(${javaName}.getId());\n" +
-                "        BeanUtils.copyProperties(jsonNode,${javaName});\n" +
-                "        return ${javaName}Service.update${className}(${javaName});"
+                "        BeanUtils.copyProperties(jsonNode,${javaName});"
     }
 
-    out.println "    }\n" +
+    out.println "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
+                "    }\n" +
                 "\n" +
                 "    @DeleteMapping(\"{id}\")\n" +
                 "    @ApiOperation(\"删除${anno}\")\n" +
                 "    @Log(\"删除${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public void delete(@PathVariable(\"id\") Long id) {\n" +
+                "    public Result<Integer> delete(@PathVariable(\"id\") Long id) {\n" +
                 "        ${javaName}Service.delete${className}(id);\n" +
+                "        return Result.ok();\n" +
                 "    }\n" +
                 "}"
 }

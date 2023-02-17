@@ -116,12 +116,12 @@ def generateImpl(out, className, table) {
     out.println "    @Override\n" +
                 "    public ${className} save${className}(${className} ${javaName}) {\n" +
                 "        return ${javaName}Repository.save(${javaName});\n" +
-                "    }\n"
+                "    }"
     out.println ""
     out.println "    @Override\n" +
                 "    public ${className} update${className}(${className} ${javaName}) {\n" +
                 "        return save${className}(${javaName});\n" +
-                "    }\n"
+                "    }"
     out.println ""
     out.println "    @Override\n" +
                 "    public void delete${className}(Long id) {\n" +
