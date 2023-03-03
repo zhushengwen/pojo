@@ -17,7 +17,7 @@ repoClassName = ""
 serviceClassName = ""
 
 typeMapping = [
-        (~/(?i)tinyint|smallint|mediumint/)      : "Integer",
+        (~/(?i)tinyint|smallint|mediumint/)      : "Long",
         (~/(?i)int/)                             : "Long",
         (~/(?i)bool|bit/)                        : "Boolean",
         (~/(?i)float|double|decimal|real/)       : "Double",
@@ -64,6 +64,7 @@ def generate(out, className, table) {
                 "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
                 "import com.jeiat.itapi.modules.pom.model.${className};\n" +
                 "import com.jeiat.itapi.modules.pom.service.${className}Service;\n" +
+                "import com.jeiat.itapi.utils.AppUtils;\n" +
                 "import io.swagger.annotations.Api;\n" +
                 "import io.swagger.annotations.ApiImplicitParam;\n" +
                 "import io.swagger.annotations.ApiImplicitParams;\n" +
@@ -74,15 +75,9 @@ def generate(out, className, table) {
                 "import org.springframework.beans.factory.annotation.Autowired;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "import org.springframework.security.access.prepost.PreAuthorize;\n" +
+                "import com.fasterxml.jackson.databind.node.ObjectNode;\n" +
                 "import org.springframework.web.bind.annotation.*;"
-    def objType = "ObjectNode"
-    if(count == 4) {
-        out.println "import com.fasterxml.jackson.databind.node.ObjectNode;"
-    }
-    else {
-        out.println "import com.jeiat.itapi.utils.AppUtils;"
-        objType = className;
-    }
+
 
     
     out.println "import java.util.List;"
@@ -124,14 +119,9 @@ def generate(out, className, table) {
                 "    @ApiOperation(\"编辑${anno}\")\n" +
                 "    @Log(\"编辑${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
-                "    public Result<${className}> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody $objType jsonNode) {"
-    if(count == 4){
-        out.println "        ${javaName}.accept(jsonNode);"
-    }else{
-        out.println "        AppUtils.accept(${javaName}, jsonNode);"
-    }
-
-    out.println "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
+                "    public Result<${className}> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody ObjectNode jsonNode) {\n" +
+                "        AppUtils.accept(${javaName}, jsonNode);\n" +
+                "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
                 "    }\n" +
                 "\n" +
                 "    @DeleteMapping(\"{id}\")\n" +
