@@ -11,9 +11,10 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
+moduleName = "eco"
 packageName = ""
 typeMapping = [
-        (~/(?i)tinyint|smallint|mediumint/)      : "Integer",
+        (~/(?i)tinyint|smallint|mediumint/)      : "Long",
         (~/(?i)int/)                             : "Long",
         (~/(?i)bool|bit/)                        : "Boolean",
         (~/(?i)float|double|decimal|real/)       : "Double",
@@ -26,7 +27,7 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\pom\\model"
+dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\model"
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
@@ -68,10 +69,16 @@ def generate(out, className, fields, table) {
         out.println "import com.jeiat.itapi.base.BaseEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
+    if(count == 6){
+        out.println "import com.jeiat.itapi.base.CommonEntity;"
+        out.println "import lombok.EqualsAndHashCode;"
+    }
     Set types = new HashSet()
 
     fields.each() {
         if (count != 4 || !contains(it.colName)){
+            types.add(it.type)
+        }else if (count != 6 || !contains6(it.colName)){
             types.add(it.type)
         }
     }
@@ -79,7 +86,6 @@ def generate(out, className, fields, table) {
     if (types.contains("Date")) {
         out.println "import java.util.Date;"
         out.println "import com.fasterxml.jackson.annotation.JsonFormat;"
-        out.println "import org.springframework.format.annotation.DateTimeFormat;"
     }
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
@@ -106,14 +112,18 @@ def generate(out, className, fields, table) {
     if (count == 4){
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends BaseEntity "
+    }else if(count == 6){
+        out.println "@EqualsAndHashCode(callSuper = false)"
+        extendsStr = "extends CommonEntity "
     }
 
     out.println "public class $className ${extendsStr}implements Serializable {"
     out.println ""
     out.println genSerialID()
-
+    index = 0
     fields.each() {
-        if (count != 4 || !contains(it.colName)){
+        if ((count != 4 || !contains(it.colName)) && (count != 6 || !contains6(it.colName))){
+            index = index + 1
             out.println ""
             // 输出注释
             if (isNotEmpty(it.commoent)) {
@@ -124,9 +134,8 @@ def generate(out, className, fields, table) {
 
             if (it.isId) out.println "    @Id"
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
-            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "")}"
-            if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd HH:mm:ss\",timezone = \"GMT+8\") \n" +
-                    "    @DateTimeFormat(pattern = \"yyyy-MM-dd\") "
+            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "").replace(it.index,"\",index = " + index)}"
+            if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.commoent)) {
                 out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
@@ -169,8 +178,9 @@ def calcFields(table) {
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
                 commoent: col.getComment(),
-                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
+                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index+ " " + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
                 isId : isId,
+                index: "\",index = " + index + " "
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -224,5 +234,9 @@ static String genSerialID() {
 }
 
 static boolean contains(String element){
-    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element
+    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element || "rank" == element  || "soft_delete" == element
+}
+
+static boolean contains6(String element){
+    return contains(element) || "rank" == element  || "soft_delete" == element
 }

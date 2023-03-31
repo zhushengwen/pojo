@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
+moduleName = "eco"
 packageName = ""
 modelClassName = ""
 repoClassName = ""
@@ -28,7 +29,7 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose rest directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\pom\\rest"
+dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\rest"
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 def generate(table, dir) {
     def className = javaClassName(table.getName(), true)
@@ -62,8 +63,8 @@ def generate(out, className, table) {
     out.println ""
     out.println "import com.jeiat.itapi.common.Result;\n" +
                 "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
-                "import com.jeiat.itapi.modules.pom.model.${className};\n" +
-                "import com.jeiat.itapi.modules.pom.service.${className}Service;\n" +
+                "import com.jeiat.itapi.modules."+moduleName+".model.${className};\n" +
+                "import com.jeiat.itapi.modules."+moduleName+".service.${className}Service;\n" +
                 "import com.jeiat.itapi.utils.AppUtils;\n" +
                 "import io.swagger.annotations.Api;\n" +
                 "import io.swagger.annotations.ApiImplicitParam;\n" +
@@ -80,6 +81,7 @@ def generate(out, className, table) {
 
 
     
+    out.println "import javax.transaction.Transactional;"
     out.println "import java.util.List;"
 
     out.println ""
@@ -119,6 +121,7 @@ def generate(out, className, table) {
                 "    @ApiOperation(\"编辑${anno}\")\n" +
                 "    @Log(\"编辑${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
+                "    @Transactional\n" +
                 "    public Result<${className}> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody ObjectNode jsonNode) {\n" +
                 "        AppUtils.accept(${javaName}, jsonNode);\n" +
                 "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
