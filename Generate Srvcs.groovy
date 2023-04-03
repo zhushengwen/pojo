@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
-moduleName = "eco"
+moduleName = ""
 packageName = ""
 modelClassName = ""
 repoClassName = ""
@@ -33,6 +33,8 @@ dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" +mod
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
+    moduleName = table.getName().split(/_/)[0]
+    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\service"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
@@ -67,8 +69,9 @@ def generate(out, className, table) {
     out.println "package $packageName"
     out.println ""
     out.println "import $modelClassName;"
+    out.println "import org.springframework.data.domain.Page;"
+    out.println "import org.springframework.data.domain.Pageable;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
-    out.println "import java.util.List;"
 
     out.println ""
     out.println "/**\n" +
@@ -78,7 +81,7 @@ def generate(out, className, table) {
     out.println "public interface ${className}Service {"
     out.println ""
 
-    out.println "    List<$className> get${className}s(Specification<$className> spec);"
+    out.println "    Page<$className> get${className}s(Specification<$className> spec, Pageable pageable);"
     out.println ""
 
     out.println "    ${className} save${className}(${className} $javaName);"
@@ -104,11 +107,12 @@ def generateImpl(out, className, table) {
     out.println "import $modelClassName;"
     out.println "import $repoClassName;"
     out.println "import $serviceClassName;"
+    out.println "import org.springframework.data.domain.Page;"
+    out.println "import org.springframework.data.domain.Pageable;"
     out.println "import org.springframework.beans.factory.annotation.Autowired;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
     out.println "import org.springframework.stereotype.Service;"
 
-    out.println "import java.util.List;"
 
     out.println ""
     out.println "/**\n" +
@@ -122,26 +126,38 @@ def generateImpl(out, className, table) {
                 "    ${className}Repository ${javaName}Repository;"
     out.println ""
     out.println "    @Override\n" +
-                "    public List<${className}> get${className}s(Specification<${className}> spec) {\n" +
-                "        return ${javaName}Repository.findAll(spec);\n" +
-                "    }"
-    out.println ""
-    out.println "    @Override\n" +
-                "    public ${className} save${className}(${className} ${javaName}) {\n" +
-                "        return ${javaName}Repository.save(${javaName});\n" +
-                "    }"
-    out.println ""
-    out.println "    @Override\n" +
-                "    public ${className} update${className}(${className} ${javaName}) {\n" +
-                "        return save${className}(${javaName});\n" +
-                "    }"
-    out.println ""
-    out.println "    @Override\n" +
-                "    public void delete${className}(Long id) {\n"
+                "    public Page<${className}> get${className}s(Specification<${className}> spec, Pageable pageable) {"
     if(count == 6){
-        out.println            "        ${javaName}Repository.softDeleteById(id);\n"
+        out.println  "        return ${javaName}Repository.findAllNormal(spec, pageable);"
     }else{
-        out.println            "        ${javaName}Repository.deleteById(id);\n"
+        out.println  "        return ${javaName}Repository.findAll(spec, pageable);"
+    }
+    out.println            "    }"
+    out.println ""
+    out.println "    @Override\n" +
+                "    public ${className} save${className}(${className} ${javaName}) {"
+    if(count == 6){
+        out.println            "        return ${javaName}Repository.saveNormal(${javaName});"
+    }else{
+        out.println            "        return ${javaName}Repository.save(${javaName});"
+    }
+    out.println "    }"
+    out.println ""
+    out.println "    @Override\n" +
+                "    public ${className} update${className}(${className} ${javaName}) {"
+    if(count == 6){
+        out.println            "        ${javaName}.assertNotDelete();"
+    }
+    out.println "        return save${className}(${javaName});\n" +
+                "    }"
+    out.println ""
+    out.println "    @Override\n" +
+                "    public void delete${className}(Long id) {"
+    if(count == 6){
+        out.println            "        ${className} ${javaName} = ${javaName}Repository.getReferenceById(id);"
+        out.println            "        ${javaName}Repository.deleteNormal(${javaName});"
+    }else{
+        out.println            "        ${javaName}Repository.deleteById(id);"
     }
 
     out.println "    }\n"

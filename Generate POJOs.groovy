@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
-moduleName = "eco"
+moduleName = ""
 packageName = ""
 typeMapping = [
         (~/(?i)tinyint|smallint|mediumint/)      : "Long",
@@ -27,11 +27,13 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\model"
-SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
-def generate(table, dir) {
+SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it) }
+
+def generate(table) {
     def className = javaClassName(table.getName(), true)
+    moduleName = table.getName().split(/_/)[0]
+    def dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\model"
     def fields = calcFields(table)
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + ".java")), "UTF-8"))
@@ -90,6 +92,8 @@ def generate(out, className, fields, table) {
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
         out.println "import com.jeiat.itapi.utils.JsonDecimalFormat;"
+        out.println "import com.jeiat.itapi.utils.TenThousandDeFormat;\n" +
+                "import com.jeiat.itapi.utils.TenThousandFormat;"
     }
     if (types.contains("InputStream")) {
         out.println "import java.io.InputStream;"
@@ -130,6 +134,8 @@ def generate(out, className, fields, table) {
                 out.println "    /**"
                 out.println "     * ${it.commoent.toString()}"
                 out.println "     */"
+                if(it.commoent.toString().contains("(T)"))
+                    out.println "    @Transient"
             }
 
             if (it.isId) out.println "    @Id"
@@ -143,7 +149,18 @@ def generate(out, className, fields, table) {
             if (!it.isId) {
                 out.println "    @JsonAlias"
             }
-            if (it.type == "Double") out.println "    @JsonSerialize(using = JsonDecimalFormat.class)"
+            if (it.type == "Double") {
+                if (isNotEmpty(it.commoent)) {
+                    if(it.commoent.toString().contains("万元"))
+                        out.println "    @JsonSerialize(using = TenThousandFormat.class)\n" +
+                                "    @JsonDeserialize(using = TenThousandDeFormat.class)"
+                }else{
+                    out.println "    @JsonSerialize(using = JsonDecimalFormat.class)"
+                }
+
+
+            }
+
             out.println "    private ${it.type} ${it.name};"
         }
     }

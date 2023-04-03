@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
-moduleName = "eco"
+moduleName = ""
 packageName = ""
 modelClassName = ""
 repoClassName = ""
@@ -32,6 +32,8 @@ typeMapping = [
 dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\rest"
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 def generate(table, dir) {
+    moduleName = table.getName().split(/_/)[0]
+    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\rest"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
@@ -74,9 +76,13 @@ def generate(out, className, table) {
                 "import net.kaczmarzyk.spring.data.jpa.web.annotation.And;\n" +
                 "import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;\n" +
                 "import org.springframework.beans.factory.annotation.Autowired;\n" +
+                "import org.springframework.data.domain.Page;\n" +
+                "import org.springframework.data.domain.Pageable;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
+                "import org.springframework.data.web.SortDefault;\n" +
                 "import org.springframework.security.access.prepost.PreAuthorize;\n" +
                 "import com.fasterxml.jackson.databind.node.ObjectNode;\n" +
+                "import springfox.documentation.annotations.ApiIgnore;\n" +
                 "import org.springframework.web.bind.annotation.*;"
 
 
@@ -102,11 +108,14 @@ def generate(out, className, table) {
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
                 "    @ApiImplicitParams({\n" +
                 "            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),\n" +
+                "            @ApiImplicitParam(name = \"page\", value = \"页码：起始值1\", dataType = \"integer\"),\n" +
+                "            @ApiImplicitParam(name = \"limit\", value = \"返回条数：默认20\", dataType = \"integer\")" +
                 "    })\n" +
                 "    public Result<List<${className}>> list(@And({\n" +
                 "            @Spec(path = \"id\", params = \"id\", spec = Equal.class),\n" +
-                "    }) Specification<${className}> spec) {\n" +
-                "        return Result.ok(${javaName}Service.get${className}s(spec));\n" +
+                "    }) Specification<${className}> spec,@ApiIgnore @SortDefault(sort = {\"rank\"}) Pageable pageable) {\n" +
+                "        Page<${className}> ${javaName}Page = ${javaName}Service.get${className}s(spec,pageable);\n" +
+                "        return Result.ok(${javaName}Page.getContent()).setTotal(${javaName}Page.getTotalElements());\n" +
                 "    }\n" +
                 "\n" +
                 "    @PostMapping\n" +

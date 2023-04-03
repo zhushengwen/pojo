@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
  *   PROJECT     project
  *   FILES       files helper
  */
-moduleName = "eco"
+moduleName = ""
 packageName = ""
 typeMapping = [
         (~/(?i)tinyint|smallint|mediumint/)      : "Long",
@@ -30,6 +30,8 @@ dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+modu
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
+    moduleName = table.getName().split(/_/)[0]
+    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\repo"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + "Repository.java")), "UTF-8"))
