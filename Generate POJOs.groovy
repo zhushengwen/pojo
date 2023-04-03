@@ -91,6 +91,7 @@ def generate(out, className, fields, table) {
     }
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
+        out.println "import com.fasterxml.jackson.databind.annotation.JsonDeserialize;"
         out.println "import com.jeiat.itapi.utils.JsonDecimalFormat;"
         out.println "import com.jeiat.itapi.utils.TenThousandDeFormat;\n" +
                 "import com.jeiat.itapi.utils.TenThousandFormat;"
