@@ -97,7 +97,7 @@ def generate(out, className, table) {
     out.println ""
     out.println "@Api(tags = \"${anno}接口\")\n" +
                 "@RestController\n" +
-                "@RequestMapping(\"/api/pom/${model}s\")\n" +
+                "@RequestMapping(\"/api/"+moduleName+"/${model}s\")\n" +
                 "public class ${className}Controller {\n" +
                 "\n" +
                 "    @Autowired\n" +

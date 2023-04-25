@@ -112,7 +112,7 @@ def generate(out, className, fields, table) {
     out.println "@Entity"
     out.println "@Table(name =\"" + table.getName() + "\")"
     out.println "@ApiModel(value =\"" + table.getComment() + "模型\")"
-    def extendsStr =  ""
+    def extendsStr =  "implements Serializable"
 
     if (count == 4){
         out.println "@EqualsAndHashCode(callSuper = false)"
@@ -122,7 +122,7 @@ def generate(out, className, fields, table) {
         extendsStr = "extends CommonEntity "
     }
 
-    out.println "public class $className ${extendsStr}implements Serializable {"
+    out.println "public class $className ${extendsStr} {"
     out.println ""
     out.println genSerialID()
     index = 0
