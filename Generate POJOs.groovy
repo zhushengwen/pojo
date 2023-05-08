@@ -27,13 +27,13 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose model directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-
+def dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it) }
 
 def generate(table) {
     def className = javaClassName(table.getName(), true)
     moduleName = table.getName().split(/_/)[0]
-    def dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\model"
+    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def fields = calcFields(table)
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + ".java")), "UTF-8"))
@@ -43,14 +43,14 @@ def generate(table) {
 }
 
 // 获取包所在文件夹路径
-def getPackageName(dir) {
+static def getPackageName(dir) {
     return dir.toString().replaceAll("\\\\", ".").replaceAll("/", ".").replaceAll("^.*src(\\.main\\.java\\.)?", "") + ";"
 }
 
 def generate(out, className, fields, table) {
     def count = 0
     fields.each() {
-        if(contains(it.colName)) count ++
+        if (contains(it.colName)) count++
     }
 
     out.println "package $packageName"
@@ -67,20 +67,27 @@ def generate(out, className, fields, table) {
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
-    if(count == 4){
+    out.println "import com.fasterxml.jackson.annotation.JsonIgnore;"
+    if (count == 4) {
         out.println "import com.jeiat.itapi.base.BaseEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
-    if(count == 6){
+    if (count == 6) {
         out.println "import com.jeiat.itapi.base.CommonEntity;"
         out.println "import lombok.EqualsAndHashCode;"
+    }
+    def file = new File(dir + "\\base", className + "Base" + ".java")
+    def hasBase = false
+    if(file.exists()){
+        hasBase = true
+        out.println "import ${packageName}.base.${className}Base"
     }
     Set types = new HashSet()
 
     fields.each() {
-        if (count != 4 || !contains(it.colName)){
+        if (count != 4 || !contains(it.colName)) {
             types.add(it.type)
-        }else if (count != 6 || !contains6(it.colName)){
+        } else if (count != 6 || !contains6(it.colName)) {
             types.add(it.type)
         }
     }
@@ -112,36 +119,47 @@ def generate(out, className, fields, table) {
     out.println "@Entity"
     out.println "@Table(name =\"" + table.getName() + "\")"
     out.println "@ApiModel(value =\"" + table.getComment() + "模型\")"
-    def extendsStr =  "implements Serializable"
-
-    if (count == 4){
+    def extendsStr = "implements Serializable"
+    if(hasBase){
+        out.println "@EqualsAndHashCode(callSuper = false)"
+        extendsStr = "extends ${className}Base"
+    }else if (count == 4) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends BaseEntity "
-    }else if(count == 6){
+    } else if (count == 6) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends CommonEntity "
     }
+
 
     out.println "public class $className ${extendsStr} {"
     out.println ""
     out.println genSerialID()
     index = 0
     fields.each() {
-        if ((count != 4 || !contains(it.colName)) && (count != 6 || !contains6(it.colName))){
+        if ((count != 4 || !contains(it.colName)) && (count != 6 || !contains6(it.colName))) {
             index = index + 1
             out.println ""
+            def isRela = false
+            if (isNotEmpty(it.commoent)) {
+                it.commoent =  it.commoent.replace("(E)", "")
+                if (it.commoent.toString().contains("(R)")) {
+                    isRela = true
+                    it.commoent = it.commoent.replace("(R)","")
+                }
+            }
             // 输出注释
             if (isNotEmpty(it.commoent)) {
                 out.println "    /**"
                 out.println "     * ${it.commoent.toString()}"
                 out.println "     */"
-                if(it.commoent.toString().contains("(T)"))
+                if (it.commoent.toString().contains("(T)"))
                     out.println "    @Transient"
             }
 
             if (it.isId) out.println "    @Id"
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
-            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "").replace(it.index,"\",index = " + index)}"
+            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "").replace(it.index, "\",index = " + index)}"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.commoent)) {
@@ -152,17 +170,25 @@ def generate(out, className, fields, table) {
             }
             if (it.type == "Double") {
                 if (isNotEmpty(it.commoent)) {
-                    if(it.commoent.toString().contains("万元"))
+                    if (it.commoent.toString().contains("万元"))
                         out.println "    @JsonSerialize(using = TenThousandFormat.class)\n" +
                                 "    @JsonDeserialize(using = TenThousandDeFormat.class)"
-                }else{
+                } else {
                     out.println "    @JsonSerialize(using = JsonDecimalFormat.class)"
                 }
-
-
             }
 
             out.println "    private ${it.type} ${it.name};"
+
+            if (isRela){
+                out.println ""
+                out.println "    @JsonIgnore"
+                out.println "    @OneToOne"
+                out.println "    @JoinColumn(name = \""+ it.colName +"\", insertable = false, updatable = false)"
+                def relaName =   it.colName.replace("_id","")
+                out.println "    private "+ javaName(moduleName + "_" + relaName,true) +" "+ javaName(relaName,false) +";"
+            }
+
         }
     }
 
@@ -187,7 +213,7 @@ def calcFields(table) {
     def index = 0
     DasUtil.getColumns(table).reduce([]) { fields, col ->
         def spec = Case.LOWER.apply(col.getDataType().getSpecification())
-        index ++
+        index++
         def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
         def colName = col.getName()
         def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
@@ -196,9 +222,9 @@ def calcFields(table) {
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
                 commoent: col.getComment(),
-                annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index+ " " + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
-                isId : isId,
-                index: "\",index = " + index + " "
+                annos   : " @Column(name = \"" + col.getName() + "\")" + "\n" + "    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + " " + (isId ? ",access = JsonProperty.Access.READ_ONLY" : "") + ")",
+                isId    : isId,
+                index   : "\",index = " + index + " "
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -251,10 +277,11 @@ static String genSerialID() {
     return "    private static final long serialVersionUID =  1L;"
 }
 
-static boolean contains(String element){
-    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element || "rank" == element  || "soft_delete" == element
+static boolean contains(String element) {
+    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element || "rank" == element || "soft_delete" == element
 }
 
-static boolean contains6(String element){
-    return contains(element) || "rank" == element  || "soft_delete" == element
+static boolean contains6(String element) {
+    return contains(element) || "rank" == element || "soft_delete" == element
 }
+

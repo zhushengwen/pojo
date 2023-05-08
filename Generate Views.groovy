@@ -107,13 +107,33 @@ def generate(out, className, table) {
                 "    @GetMapping\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
                 "    @ApiImplicitParams({\n" +
-                "            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),\n" +
-                "            @ApiImplicitParam(name = \"page\", value = \"页码：起始值1\", dataType = \"integer\"),\n" +
+                "            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),"
+    fields.each() {
+
+        if (isNotEmpty(it.commoent)) {
+            if (it.commoent.toString().contains("(E)")) {
+                def commoent = it.commoent.replace("(E)", "")
+                out.println "            @ApiImplicitParam(name = \"${it.colName}\", value = \"${commoent}\"),"
+            }
+        }
+
+    }
+
+
+    out.println "            @ApiImplicitParam(name = \"page\", value = \"页码：起始值1\", dataType = \"integer\"),\n" +
                 "            @ApiImplicitParam(name = \"limit\", value = \"返回条数：默认20\", dataType = \"integer\")" +
                 "    })\n" +
                 "    public Result<List<${className}>> list(@And({\n" +
-                "            @Spec(path = \"id\", params = \"id\", spec = Equal.class),\n" +
-                "    }) Specification<${className}> spec,@ApiIgnore @SortDefault(sort = {\"rank\"}) Pageable pageable) {\n" +
+                "            @Spec(path = \"id\", params = \"id\", spec = Equal.class),"
+    fields.each() {
+        if (isNotEmpty(it.commoent)) {
+            if (it.commoent.toString().contains("(E)")) {
+                out.println "            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Equal.class),"
+            }
+        }
+
+    }
+    out.println "    }) Specification<${className}> spec,@ApiIgnore "+ (count == 6?"@SortDefault(sort = {\"rank\"}) ":"") +"Pageable pageable) {\n" +
                 "        Page<${className}> ${javaName}Page = ${javaName}Service.get${className}s(spec,pageable);\n" +
                 "        return Result.ok(${javaName}Page.getContent()).setTotal(${javaName}Page.getTotalElements());\n" +
                 "    }\n" +
@@ -190,6 +210,10 @@ def calcFields(table) {
     }
 }
 
-static boolean contains(String element){
-    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element
+static boolean contains(String element) {
+    return "create_time" == element || "update_time" == element || "create_by" == element || "update_by" == element || "rank" == element || "soft_delete" == element
+}
+
+static boolean contains6(String element) {
+    return contains(element) || "rank" == element || "soft_delete" == element
 }
