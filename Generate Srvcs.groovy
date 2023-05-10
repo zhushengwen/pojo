@@ -71,7 +71,10 @@ def generate(out, className, table) {
     out.println "import $modelClassName;"
     out.println "import org.springframework.data.domain.Page;"
     out.println "import org.springframework.data.domain.Pageable;"
+    out.println "import org.springframework.data.domain.Sort;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
+
+    out.println "import java.util.List;"
 
     out.println ""
     out.println "/**\n" +
@@ -81,7 +84,10 @@ def generate(out, className, table) {
     out.println "public interface ${className}Service {"
     out.println ""
 
-    out.println "    Page<$className> get${className}s(Specification<$className> spec, Pageable pageable);"
+    out.println "    Page<$className> get${className}Page(Specification<$className> spec, Pageable pageable);"
+    out.println ""
+
+    out.println "    List<$className> get${className}List(Specification<$className> spec, Sort sort);"
     out.println ""
 
     out.println "    ${className} save${className}(${className} $javaName);"
@@ -109,10 +115,12 @@ def generateImpl(out, className, table) {
     out.println "import $serviceClassName;"
     out.println "import org.springframework.data.domain.Page;"
     out.println "import org.springframework.data.domain.Pageable;"
+    out.println "import org.springframework.data.domain.Sort;"
     out.println "import org.springframework.beans.factory.annotation.Autowired;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
     out.println "import org.springframework.stereotype.Service;"
 
+    out.println "import java.util.List;"
 
     out.println ""
     out.println "/**\n" +
@@ -126,7 +134,7 @@ def generateImpl(out, className, table) {
                 "    ${className}Repository ${javaName}Repository;"
     out.println ""
     out.println "    @Override\n" +
-                "    public Page<${className}> get${className}s(Specification<${className}> spec, Pageable pageable) {"
+                "    public Page<${className}> get${className}Page(Specification<${className}> spec, Pageable pageable) {"
     if(count == 6){
         out.println  "        return ${javaName}Repository.findAllNormal(spec, pageable);"
     }else{
@@ -134,6 +142,17 @@ def generateImpl(out, className, table) {
     }
     out.println            "    }"
     out.println ""
+
+    out.println "    @Override\n" +
+            "    public List<${className}> get${className}List(Specification<${className}> spec, Sort sort) {"
+    if(count == 6){
+        out.println  "        return ${javaName}Repository.findAllNormal(spec, sort);"
+    }else{
+        out.println  "        return ${javaName}Repository.findAll(spec, sort);"
+    }
+    out.println            "    }"
+    out.println ""
+
     out.println "    @Override\n" +
                 "    public ${className} save${className}(${className} ${javaName}) {"
     if(count == 6){
@@ -214,4 +233,15 @@ static boolean contains(String element){
 
 static boolean contains6(String element){
     return contains(element) || "rank" == element  || "soft_delete" == element
+}
+
+static String getCleanComment(String comment){
+    return comment.replace("(NP)","").replace("(E)","")
+}
+
+static boolean tableIsNoPage(String comment){
+    return comment.contains("(NP)")
+}
+static boolean tableIsExport(String comment){
+    return comment.contains("(E)")
 }

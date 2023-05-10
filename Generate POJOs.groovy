@@ -52,7 +52,9 @@ def generate(out, className, fields, table) {
     fields.each() {
         if (contains(it.colName)) count++
     }
-
+    def comment = table.getComment()
+    def cleanComment = getCleanComment(comment)
+    def isExport = tableIsExport(comment)
     out.println "package $packageName"
     out.println ""
     out.println "import javax.persistence.*;"
@@ -95,6 +97,12 @@ def generate(out, className, fields, table) {
     if (types.contains("Date")) {
         out.println "import java.util.Date;"
         out.println "import com.fasterxml.jackson.annotation.JsonFormat;"
+        if (isExport) {
+            out.println "import com.alibaba.excel.annotation.format.DateTimeFormat;"
+        }
+    }
+    if(isExport){
+        out.println "import com.alibaba.excel.annotation.ExcelProperty;"
     }
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
@@ -115,10 +123,12 @@ def generate(out, className, fields, table) {
 //  out.println "@Setter"
 //  out.println "@Getter"
 //  out.println "@ToString"
+
+
     out.println "@Data"
     out.println "@Entity"
     out.println "@Table(name =\"" + table.getName() + "\")"
-    out.println "@ApiModel(value =\"" + table.getComment() + "模型\")"
+    out.println "@ApiModel(value =\"${cleanComment}模型\")"
     def extendsStr = "implements Serializable"
     if(hasBase){
         out.println "@EqualsAndHashCode(callSuper = false)"
@@ -141,6 +151,7 @@ def generate(out, className, fields, table) {
             index = index + 1
             out.println ""
             def isRela = false
+            def isIgnore = false
             if (isNotEmpty(it.commoent)) {
                 it.commoent =  it.commoent.replace("(E)", "")
                 if (it.commoent.toString().contains("(R)")) {
@@ -148,24 +159,50 @@ def generate(out, className, fields, table) {
                     it.commoent = it.commoent.replace("(R)","")
                 }
             }
+            if (isNotEmpty(it.commoent)) {
+
+                if (it.commoent.toString().contains("(I)"))
+                {
+                    isIgnore = true
+                    it.commoent = it.commoent.replace("(I)","")
+                }
+
+            }
+
             // 输出注释
             if (isNotEmpty(it.commoent)) {
+                if (it.commoent.toString().contains("(T)")){
+                    out.println "    @Transient"
+                    it.commoent = it.commoent.replace("(T)","")
+                }
                 out.println "    /**"
                 out.println "     * ${it.commoent.toString()}"
                 out.println "     */"
-                if (it.commoent.toString().contains("(T)"))
-                    out.println "    @Transient"
             }
+
+
 
             if (it.isId) out.println "    @Id"
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
-            if (it.annos != "") out.println "   ${it.annos.replace("[@Id]", "").replace(it.index, "\",index = " + index)}"
+
+            out.println "    @Column(name = \"${it.colName}\")"
+            out.println "    "+(isIgnore?"//":"")+"@JsonProperty(value = \"${it.colName}\", index = ${it.index}" + (it.isId ? " ,access = JsonProperty.Access.READ_ONLY" : "") + ")"
+
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.commoent)) {
                 out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
+                if (tableIsExport(comment)) {
+                    out.println "    @ExcelProperty(\"${it.commoent.toString()}\")"
+                    if ((it.type == "Date")) {
+                        out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
+                    }
+                }
             }
             if (!it.isId) {
+                if(isIgnore)
+                out.println "    @JsonIgnore"
+                else
                 out.println "    @JsonAlias"
             }
             if (it.type == "Double") {
@@ -222,9 +259,8 @@ def calcFields(table) {
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
                 commoent: col.getComment(),
-                annos   : " @Column(name = \"" + col.getName() + "\")" + "\n" + "    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + " " + (isId ? ",access = JsonProperty.Access.READ_ONLY" : "") + ")",
+                index   : index,
                 isId    : isId,
-                index   : "\",index = " + index + " "
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -285,3 +321,18 @@ static boolean contains6(String element) {
     return contains(element) || "rank" == element || "soft_delete" == element
 }
 
+static String getCleanComment(String comment) {
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "")
+}
+
+static boolean tableIsNoPage(String comment) {
+    return comment.contains("(NP)")
+}
+
+static boolean tableIsExport(String comment) {
+    return comment.contains("(E)")
+}
+
+static boolean tableIsList(String comment) {
+    return comment.contains("(L)")
+}
