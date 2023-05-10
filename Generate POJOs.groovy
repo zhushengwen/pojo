@@ -58,7 +58,7 @@ def generate(out, className, fields, table) {
     out.println "package $packageName"
     out.println ""
     out.println "import javax.persistence.*;"
-    out.println "import javax.validation.constraints.Max;"
+    out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
     out.println "import javax.validation.constraints.NotEmpty;"
 //    out.println "import javax.persistence.Entity;"
 //    out.println "import javax.persistence.Table;"
@@ -219,7 +219,7 @@ def generate(out, className, fields, table) {
 
             if(it.type == "String"){
                if(it.notNull) out.println "    @NotEmpty"
-               if(it.length != null && it.length>0) out.println "    @Max(${it.length})"
+               if(it.length != null && it.length>0) out.println "    @ByteMaxLength(max = ${it.length})"
             }
 
             out.println "    private ${it.type} ${it.name};"
