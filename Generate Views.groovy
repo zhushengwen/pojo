@@ -96,6 +96,7 @@ def generate(out, className, table) {
     }
 
     out.println "import javax.transaction.Transactional;"
+    out.println "import javax.validation.Valid;"
     out.println "import java.util.List;"
 
 
@@ -194,7 +195,7 @@ def generate(out, className, table) {
             "    @ApiOperation(\"增加${anno}\")\n" +
             "    @Log(\"增加${anno}\")\n" +
             "    @PreAuthorize(\"@el.check(0)\")\n" +
-            "    public Result<${className}> add(@RequestBody ${className} ${javaName}) {\n" +
+            "    public Result<${className}> add(@Valid @RequestBody ${className} ${javaName}) {\n" +
             "        return Result.ok(${javaName}Service.save${className}(${javaName}));\n" +
             "    }\n" +
             "\n" +

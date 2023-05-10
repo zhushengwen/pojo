@@ -58,6 +58,8 @@ def generate(out, className, fields, table) {
     out.println "package $packageName"
     out.println ""
     out.println "import javax.persistence.*;"
+    out.println "import javax.validation.constraints.Max;"
+    out.println "import javax.validation.constraints.NotEmpty;"
 //    out.println "import javax.persistence.Entity;"
 //    out.println "import javax.persistence.Table;"
     out.println "import java.io.Serializable;"
@@ -215,6 +217,11 @@ def generate(out, className, fields, table) {
                 }
             }
 
+            if(it.type == "String"){
+               if(it.notNull) out.println "    @NotEmpty"
+               if(it.length != null && it.length>0) out.println "    @Max(${it.length})"
+            }
+
             out.println "    private ${it.type} ${it.name};"
 
             if (isRela){
@@ -261,6 +268,8 @@ def calcFields(table) {
                 commoent: col.getComment(),
                 index   : index,
                 isId    : isId,
+                notNull : col.isNotNull(),
+                length  : col.getDataType().getLength()
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]

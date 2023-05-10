@@ -120,6 +120,7 @@ def generateImpl(out, className, table) {
     out.println "import org.springframework.data.jpa.domain.Specification;"
     out.println "import org.springframework.stereotype.Service;"
 
+    out.println "import javax.validation.Valid;"
     out.println "import java.util.List;"
 
     out.println ""
