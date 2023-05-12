@@ -122,12 +122,19 @@ def generate(out, className, table) {
     fields.each() {
         if (isNotEmpty(it.commoent)) {
             def isEqal = it.commoent.toString().contains("(E)")
+            def isDefault = it.commoent.toString().contains("(DE)")
+            isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
             def colComment = it.commoent.toString().replace("(E)","").replace("(L)","")
-
+            def defaultRequire = ""
+            def defaultValue = ""
+            if(isDefault){
+                defaultRequire = ", required = true"
+                defaultValue = ", defaultVal = \"0\""
+            }
             if (isEqal) {
-                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")
-                specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Equal.class),")
+                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"${defaultRequire}),")
+                specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Equal.class${defaultValue}),")
             }
             if (isLike) {
                 params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")
@@ -139,6 +146,7 @@ def generate(out, className, table) {
     def listComment = "分页"
     def method = "page"
     if (tableIsNoPage(comment)) {
+        method = "list"
         listComment = "列表"
     }else{
         paramsPage.add("            @ApiImplicitParam(name = \"page\", value = \"页码：起始值1\", dataType = \"integer\"),")

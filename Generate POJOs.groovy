@@ -187,6 +187,7 @@ def generate(out, className, fields, table) {
             if (isNotEmpty(it.commoent)) {
                 it.commoent = it.commoent.replace("(L)", "")
                 it.commoent = it.commoent.replace("(E)", "")
+                it.commoent = it.commoent.replace("(DE)", "")
                 if (it.commoent.toString().contains("(R)")) {
                     isRela = true
                     it.commoent = it.commoent.replace("(R)", "")
@@ -217,7 +218,7 @@ def generate(out, className, fields, table) {
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
 
             out.println "    @Column(name = \"${it.colName}\")"
-            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? " ,access = JsonProperty.Access.READ_ONLY" : "") + ")"
+            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
 
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
             // 输出成员变量
