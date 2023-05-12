@@ -77,6 +77,7 @@ def generate(out, className, table) {
             "import io.swagger.annotations.ApiImplicitParams;\n" +
             "import io.swagger.annotations.ApiOperation;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.Equal;\n" +
+            "import net.kaczmarzyk.spring.data.jpa.domain.Like;\n" +
             "import net.kaczmarzyk.spring.data.jpa.web.annotation.And;\n" +
             "import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;\n" +
             "import org.springframework.beans.factory.annotation.Autowired;\n" +
@@ -117,13 +118,20 @@ def generate(out, className, table) {
     def paramsPage = []
     def specs = []
     params.add("            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),")
+    specs.add("            @Spec(path = \"id\", params = \"id\", spec = Equal.class),")
     fields.each() {
-
         if (isNotEmpty(it.commoent)) {
-            if (it.commoent.toString().contains("(E)")) {
-                def commoent = it.commoent.replace("(E)", "")
-                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${commoent}\"),")
+            def isEqal = it.commoent.toString().contains("(E)")
+            def isLike = it.commoent.toString().contains("(L)")
+            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","")
+
+            if (isEqal) {
+                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")
                 specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Equal.class),")
+            }
+            if (isLike) {
+                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")
+                specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Like.class),")
             }
         }
 
@@ -271,14 +279,14 @@ static boolean contains6(String element) {
     return contains(element) || "rank" == element || "soft_delete" == element
 }
 static boolean containRank(fields){
+    boolean rank =false
     fields.each() {
-        if (it.colName.contains("rank")) return true
+        if (!rank && it.colName == "rank") rank = true
     }
-    return false
+    return rank
 }
-
 static String getCleanComment(String comment) {
-    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "")
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
 }
 
 static boolean tableIsNoPage(String comment) {
@@ -291,6 +299,10 @@ static boolean tableIsExport(String comment) {
 
 static boolean tableIsList(String comment) {
     return comment.contains("(L)")
+}
+
+static boolean tableHaveBase(String comment) {
+    return comment.contains("(B)")
 }
 
 static void printList(out,params){

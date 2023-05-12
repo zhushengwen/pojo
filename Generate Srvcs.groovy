@@ -236,13 +236,22 @@ static boolean contains6(String element){
     return contains(element) || "rank" == element  || "soft_delete" == element
 }
 
-static String getCleanComment(String comment){
-    return comment.replace("(NP)","").replace("(E)","")
+static String getCleanComment(String comment) {
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
 }
 
-static boolean tableIsNoPage(String comment){
+static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")
 }
-static boolean tableIsExport(String comment){
+
+static boolean tableIsExport(String comment) {
     return comment.contains("(E)")
+}
+
+static boolean tableIsList(String comment) {
+    return comment.contains("(L)")
+}
+
+static boolean tableHaveBase(String comment) {
+    return comment.contains("(B)")
 }

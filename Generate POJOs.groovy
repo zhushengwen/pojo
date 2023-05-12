@@ -44,7 +44,7 @@ def generate(table) {
 
 // 获取包所在文件夹路径
 static def getPackageName(dir) {
-    return dir.toString().replaceAll("\\\\", ".").replaceAll("/", ".").replaceAll("^.*src(\\.main\\.java\\.)?", "") + ";"
+    return dir.toString().replaceAll("\\\\", ".").replaceAll("/", ".").replaceAll("^.*src(\\.main\\.java\\.)?", "")
 }
 
 def generate(out, className, fields, table) {
@@ -55,7 +55,7 @@ def generate(out, className, fields, table) {
     def comment = table.getComment()
     def cleanComment = getCleanComment(comment)
     def isExport = tableIsExport(comment)
-    out.println "package $packageName"
+    out.println "package $packageName;"
     out.println ""
     out.println "import javax.persistence.*;"
     out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
@@ -72,6 +72,8 @@ def generate(out, className, fields, table) {
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
     out.println "import com.fasterxml.jackson.annotation.JsonIgnore;"
+    out.println "import org.hibernate.annotations.NotFound;"
+    out.println "import org.hibernate.annotations.NotFoundAction;"
     if (count == 4) {
         out.println "import com.jeiat.itapi.base.BaseEntity;"
         out.println "import lombok.EqualsAndHashCode;"
@@ -80,11 +82,39 @@ def generate(out, className, fields, table) {
         out.println "import com.jeiat.itapi.base.CommonEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
-    def file = new File(dir + "\\base", className + "Base" + ".java")
+
+    def baseName = className + "Base"
+    def file = new File(dir + "\\base", baseName + ".java")
+
+    if (tableHaveBase(comment)) {
+        if (!file.exists()) {
+            PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
+            printWriter.withPrintWriter { out2 ->
+                {
+
+                    out2.println "package com.jeiat.itapi.modules.anew.model.base;\n" +
+                            "\n" +
+                            "import com.jeiat.itapi.base.CommonEntity;\n" +
+                            "import lombok.Data;\n" +
+                            "import lombok.EqualsAndHashCode;\n" +
+                            "\n" +
+                            "\n" +
+                            "@Data\n" +
+                            "@EqualsAndHashCode(callSuper = false)\n" +
+                            "public abstract class  $baseName extends CommonEntity  {\n" +
+                            "\n" +
+                            "\n" +
+                            "\n" +
+                            "}\n"
+                }
+            }
+        }
+    }
+
     def hasBase = false
-    if(file.exists()){
+    if (file.exists()) {
         hasBase = true
-        out.println "import ${packageName}.base.${className}Base"
+        out.println "import ${packageName}.base.${className}Base;"
     }
     Set types = new HashSet()
 
@@ -103,7 +133,7 @@ def generate(out, className, fields, table) {
             out.println "import com.alibaba.excel.annotation.format.DateTimeFormat;"
         }
     }
-    if(isExport){
+    if (isExport) {
         out.println "import com.alibaba.excel.annotation.ExcelProperty;"
     }
     if (types.contains("Double")) {
@@ -132,10 +162,10 @@ def generate(out, className, fields, table) {
     out.println "@Table(name =\"" + table.getName() + "\")"
     out.println "@ApiModel(value =\"${cleanComment}模型\")"
     def extendsStr = "implements Serializable"
-    if(hasBase){
+    if (hasBase) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends ${className}Base"
-    }else if (count == 4) {
+    } else if (count == 4) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends BaseEntity "
     } else if (count == 6) {
@@ -155,27 +185,27 @@ def generate(out, className, fields, table) {
             def isRela = false
             def isIgnore = false
             if (isNotEmpty(it.commoent)) {
-                it.commoent =  it.commoent.replace("(E)", "")
+                it.commoent = it.commoent.replace("(L)", "")
+                it.commoent = it.commoent.replace("(E)", "")
                 if (it.commoent.toString().contains("(R)")) {
                     isRela = true
-                    it.commoent = it.commoent.replace("(R)","")
+                    it.commoent = it.commoent.replace("(R)", "")
                 }
             }
             if (isNotEmpty(it.commoent)) {
 
-                if (it.commoent.toString().contains("(I)"))
-                {
+                if (it.commoent.toString().contains("(I)")) {
                     isIgnore = true
-                    it.commoent = it.commoent.replace("(I)","")
+                    it.commoent = it.commoent.replace("(I)", "")
                 }
 
             }
 
             // 输出注释
             if (isNotEmpty(it.commoent)) {
-                if (it.commoent.toString().contains("(T)")){
+                if (it.commoent.toString().contains("(T)")) {
                     out.println "    @Transient"
-                    it.commoent = it.commoent.replace("(T)","")
+                    it.commoent = it.commoent.replace("(T)", "")
                 }
                 out.println "    /**"
                 out.println "     * ${it.commoent.toString()}"
@@ -183,12 +213,11 @@ def generate(out, className, fields, table) {
             }
 
 
-
             if (it.isId) out.println "    @Id"
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
 
             out.println "    @Column(name = \"${it.colName}\")"
-            out.println "    "+(isIgnore?"//":"")+"@JsonProperty(value = \"${it.colName}\", index = ${it.index}" + (it.isId ? " ,access = JsonProperty.Access.READ_ONLY" : "") + ")"
+            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? " ,access = JsonProperty.Access.READ_ONLY" : "") + ")"
 
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
             // 输出成员变量
@@ -202,10 +231,10 @@ def generate(out, className, fields, table) {
                 }
             }
             if (!it.isId) {
-                if(isIgnore)
-                out.println "    @JsonIgnore"
+                if (isIgnore)
+                    out.println "    @JsonIgnore"
                 else
-                out.println "    @JsonAlias"
+                    out.println "    @JsonAlias"
             }
             if (it.type == "Double") {
                 if (isNotEmpty(it.commoent)) {
@@ -217,20 +246,21 @@ def generate(out, className, fields, table) {
                 }
             }
 
-            if(it.type == "String"){
-               if(it.notNull) out.println "    @NotEmpty"
-               if(it.length != null && it.length>0) out.println "    @ByteMaxLength(max = ${it.length})"
+            if (it.type == "String") {
+                if (it.notNull) out.println "    @NotEmpty"
+                if (it.length != null && it.length > 0) out.println "    @ByteMaxLength(max = ${it.length})"
             }
 
             out.println "    private ${it.type} ${it.name};"
 
-            if (isRela){
+            if (isRela) {
                 out.println ""
                 out.println "    @JsonIgnore"
                 out.println "    @OneToOne"
-                out.println "    @JoinColumn(name = \""+ it.colName +"\", insertable = false, updatable = false)"
-                def relaName =   it.colName.replace("_id","")
-                out.println "    private "+ javaName(moduleName + "_" + relaName,true) +" "+ javaName(relaName,false) +";"
+                out.println "    @NotFound(action = NotFoundAction.IGNORE)"
+                out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
+                def relaName = it.colName.replace("_id", "")
+                out.println "    private " + javaName(moduleName + "_" + relaName, true) + " " + javaName(relaName, false) + ";"
             }
 
         }
@@ -331,7 +361,7 @@ static boolean contains6(String element) {
 }
 
 static String getCleanComment(String comment) {
-    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "")
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
 }
 
 static boolean tableIsNoPage(String comment) {
@@ -344,4 +374,8 @@ static boolean tableIsExport(String comment) {
 
 static boolean tableIsList(String comment) {
     return comment.contains("(L)")
+}
+
+static boolean tableHaveBase(String comment) {
+    return comment.contains("(B)")
 }
