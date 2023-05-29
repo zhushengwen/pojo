@@ -125,7 +125,7 @@ def generate(out, className, table) {
             def isDefault = it.commoent.toString().contains("(DE)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
-            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","")
+            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","")
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){

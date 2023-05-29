@@ -48,6 +48,8 @@ static def getPackageName(dir) {
 }
 
 def generate(out, className, fields, table) {
+    def moduleName = table.getName().split(/_/)[0]
+
     def count = 0
     fields.each() {
         if (contains(it.colName)) count++
@@ -92,7 +94,7 @@ def generate(out, className, fields, table) {
             printWriter.withPrintWriter { out2 ->
                 {
 
-                    out2.println "package com.jeiat.itapi.modules.anew.model.base;\n" +
+                    out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
                             "\n" +
                             "import com.jeiat.itapi.base.CommonEntity;\n" +
                             "import lombok.Data;\n" +
