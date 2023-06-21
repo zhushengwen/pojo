@@ -186,10 +186,12 @@ def generate(out, className, fields, table) {
             out.println ""
             def isRela = false
             def isIgnore = false
+            def isNja = false
             if (isNotEmpty(it.commoent)) {
                 it.commoent = it.commoent.replace("(L)", "")
                 it.commoent = it.commoent.replace("(E)", "")
                 it.commoent = it.commoent.replace("(DE)", "")
+
                 if (it.commoent.toString().contains("(R)")) {
                     isRela = true
                     it.commoent = it.commoent.replace("(R)", "")
@@ -202,6 +204,11 @@ def generate(out, className, fields, table) {
                     it.commoent = it.commoent.replace("(I)", "")
                 }
 
+
+                if (it.commoent.toString().contains("(NJA)")) {
+                    isNja = true
+                    it.commoent = it.commoent.replace("(NJA)", "")
+                }
             }
 
             // 输出注释
@@ -221,8 +228,8 @@ def generate(out, className, fields, table) {
 
             out.println "    @Column(name = \"${it.colName}\")"
             out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
-
-            if (it.type == "Date") out.println "    @JsonFormat(pattern=\"yyyy-MM-dd\",timezone = \"GMT+8\")"
+            def datePattern = it.commoent.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
+            if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.commoent)) {
                 out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
@@ -236,7 +243,7 @@ def generate(out, className, fields, table) {
             if (!it.isId) {
                 if (isIgnore)
                     out.println "    @JsonIgnore"
-                else
+                else if(!isNja)
                     out.println "    @JsonAlias"
             }
             if (it.type == "Double") {
@@ -381,4 +388,8 @@ static boolean tableIsList(String comment) {
 
 static boolean tableHaveBase(String comment) {
     return comment.contains("(B)")
+}
+
+static boolean fieldIsNoChange(String comment) {
+    return comment.contains("(NJA)")
 }
