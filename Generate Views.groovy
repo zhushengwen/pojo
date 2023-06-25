@@ -77,6 +77,8 @@ def generate(out, className, table) {
             "import io.swagger.annotations.ApiImplicitParams;\n" +
             "import io.swagger.annotations.ApiOperation;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.Equal;\n" +
+            "import net.kaczmarzyk.spring.data.jpa.domain.GreaterThanOrEqual;\n" +
+            "import net.kaczmarzyk.spring.data.jpa.domain.LessThanOrEqual;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.Like;\n" +
             "import net.kaczmarzyk.spring.data.jpa.web.annotation.And;\n" +
             "import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;\n" +
@@ -123,9 +125,10 @@ def generate(out, className, table) {
         if (isNotEmpty(it.commoent)) {
             def isEqal = it.commoent.toString().contains("(E)")
             def isDefault = it.commoent.toString().contains("(DE)")
+            def isBetween = it.commoent.toString().contains("(BE)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
-            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","")
+            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","")
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){
@@ -135,6 +138,12 @@ def generate(out, className, table) {
             if (isEqal) {
                 params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"${defaultRequire}),")
                 specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Equal.class${defaultValue}),")
+            }
+            if(isBetween){
+                params.add("            @ApiImplicitParam(name = \"start_${it.colName}\", value = \"开始${colComment}\"),")
+                params.add("            @ApiImplicitParam(name = \"end_${it.colName}\", value = \"结束${colComment}\"),")
+                specs.add("            @Spec(path = \"${it.name}\", params = \"start_${it.colName}\", spec = GreaterThanOrEqual.class),")
+                specs.add("            @Spec(path = \"${it.name}\", params = \"end_${it.colName}\", spec = LessThanOrEqual.class),")
             }
             if (isLike) {
                 params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")

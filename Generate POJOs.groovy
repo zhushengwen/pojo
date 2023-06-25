@@ -191,6 +191,7 @@ def generate(out, className, fields, table) {
                 it.commoent = it.commoent.replace("(L)", "")
                 it.commoent = it.commoent.replace("(E)", "")
                 it.commoent = it.commoent.replace("(DE)", "")
+                it.commoent = it.commoent.replace("(BE)", "")
 
                 if (it.commoent.toString().contains("(R)")) {
                     isRela = true
