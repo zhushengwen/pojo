@@ -26,12 +26,12 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose repo directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\repo"
+dir = ""
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
     moduleName = table.getName().split(/_/)[0]
-    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\repo"
+    dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\repo"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + "Repository.java")), "UTF-8"))
@@ -132,4 +132,14 @@ static boolean contains(String element){
 
 static boolean contains6(String element){
     return contains(element) || "rank" == element  || "soft_delete" == element
+}
+
+static String getProjectName(String projectStr){
+
+    def s = "componentStore="
+    def e = ")"
+    def si = projectStr.indexOf(s)
+    def ei = projectStr.indexOf(e,si + s.length())
+
+    return projectStr.substring(si + s.length(),ei)
 }

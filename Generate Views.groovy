@@ -29,12 +29,12 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose rest directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\rest"
+dir = ""
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
     moduleName = table.getName().split(/_/)[0]
-    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\rest"
+    dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\rest"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
@@ -330,4 +330,14 @@ static void printList(out,params){
     params.each{
         out.println it
     }
+}
+
+static String getProjectName(String projectStr){
+
+    def s = "componentStore="
+    def e = ")"
+    def si = projectStr.indexOf(s)
+    def ei = projectStr.indexOf(e,si + s.length())
+
+    return projectStr.substring(si + s.length(),ei)
 }

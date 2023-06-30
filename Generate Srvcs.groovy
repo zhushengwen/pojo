@@ -29,12 +29,12 @@ typeMapping = [
 //FILES.chooseDirectoryAndSave("Choose service directory", "Choose where to store generated files") { dir ->
 //    SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 //}
-dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" +moduleName+ "\\service"
+dir = ""
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it, dir) }
 
 def generate(table, dir) {
     moduleName = table.getName().split(/_/)[0]
-    dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\service"
+    dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\"+moduleName+"\\service"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
@@ -254,4 +254,14 @@ static boolean tableIsList(String comment) {
 
 static boolean tableHaveBase(String comment) {
     return comment.contains("(B)")
+}
+
+static String getProjectName(String projectStr){
+
+    def s = "componentStore="
+    def e = ")"
+    def si = projectStr.indexOf(s)
+    def ei = projectStr.indexOf(e,si + s.length())
+
+    return projectStr.substring(si + s.length(),ei)
 }
