@@ -35,6 +35,11 @@ def generate(table) {
     moduleName = table.getName().split(/_/)[0]
     dir = "C:\\soft\\java\\code\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def fields = calcFields(table)
+    def tableName = table.getName()
+    checkTableCommonent(table.getComment(), tableName)
+    fields.each() {
+        checkFieldCommonent(it.comment,it.colName,tableName)
+    }
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + ".java")), "UTF-8"))
     printWriter.withPrintWriter { out -> generate(out, className, fields, table) }
@@ -48,13 +53,13 @@ static def getPackageName(dir) {
 }
 
 def generate(out, className, fields, table) {
-    def moduleName = table.getName().split(/_/)[0]
-
+    def tableName = table.getName()
+    def moduleName = tableName.split(/_/)[0]
+    def comment = table.getComment()
     def count = 0
     fields.each() {
         if (contains(it.colName)) count++
     }
-    def comment = table.getComment()
     def cleanComment = getCleanComment(comment)
     def isExport = tableIsExport(comment)
     out.println "package $packageName;"
@@ -161,7 +166,7 @@ def generate(out, className, fields, table) {
 
     out.println "@Data"
     out.println "@Entity"
-    out.println "@Table(name =\"" + table.getName() + "\")"
+    out.println "@Table(name =\"" + tableName + "\")"
     out.println "@ApiModel(value =\"${cleanComment}模型\")"
     def extendsStr = "implements Serializable"
     if (hasBase) {
@@ -187,39 +192,39 @@ def generate(out, className, fields, table) {
             def isRela = false
             def isIgnore = false
             def isNja = false
-            if (isNotEmpty(it.commoent)) {
-                it.commoent = it.commoent.replace("(L)", "")
-                it.commoent = it.commoent.replace("(E)", "")
-                it.commoent = it.commoent.replace("(DE)", "")
-                it.commoent = it.commoent.replace("(BE)", "")
+            if (isNotEmpty(it.comment)) {
+                it.comment = it.comment.replace("(L)", "")
+                it.comment = it.comment.replace("(E)", "")
+                it.comment = it.comment.replace("(DE)", "")
+                it.comment = it.comment.replace("(BE)", "")
 
-                if (it.commoent.toString().contains("(R)")) {
+                if (it.comment.toString().contains("(R)")) {
                     isRela = true
-                    it.commoent = it.commoent.replace("(R)", "")
+                    it.comment = it.comment.replace("(R)", "")
                 }
             }
-            if (isNotEmpty(it.commoent)) {
+            if (isNotEmpty(it.comment)) {
 
-                if (it.commoent.toString().contains("(I)")) {
+                if (it.comment.toString().contains("(I)")) {
                     isIgnore = true
-                    it.commoent = it.commoent.replace("(I)", "")
+                    it.comment = it.comment.replace("(I)", "")
                 }
 
 
-                if (it.commoent.toString().contains("(NJA)")) {
+                if (it.comment.toString().contains("(NJA)")) {
                     isNja = true
-                    it.commoent = it.commoent.replace("(NJA)", "")
+                    it.comment = it.comment.replace("(NJA)", "")
                 }
             }
 
             // 输出注释
-            if (isNotEmpty(it.commoent)) {
-                if (it.commoent.toString().contains("(T)")) {
+            if (isNotEmpty(it.comment)) {
+                if (it.comment.toString().contains("(T)")) {
                     out.println "    @Transient"
-                    it.commoent = it.commoent.replace("(T)", "")
+                    it.comment = it.comment.replace("(T)", "")
                 }
                 out.println "    /**"
-                out.println "     * ${it.commoent.toString()}"
+                out.println "     * ${it.comment.toString()}"
                 out.println "     */"
             }
 
@@ -229,13 +234,13 @@ def generate(out, className, fields, table) {
 
             out.println "    @Column(name = \"${it.colName}\")"
             out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
-            def datePattern = it.commoent.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
+            def datePattern = it.comment.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
-            if (isNotEmpty(it.commoent)) {
-                out.println "    @ApiModelProperty(value=\"${it.commoent.toString()}\")"
+            if (isNotEmpty(it.comment)) {
+                out.println "    @ApiModelProperty(value=\"${it.comment.toString()}\")"
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.commoent.toString()}\")"
+                    out.println "    @ExcelProperty(\"${it.comment.toString()}\")"
                     if ((it.type == "Date")) {
                         out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
                     }
@@ -248,8 +253,8 @@ def generate(out, className, fields, table) {
                     out.println "    @JsonAlias"
             }
             if (it.type == "Double") {
-                if (isNotEmpty(it.commoent)) {
-                    if (it.commoent.toString().contains("万元"))
+                if (isNotEmpty(it.comment)) {
+                    if (it.comment.toString().contains("万元"))
                         out.println "    @JsonSerialize(using = TenThousandFormat.class)\n" +
                                 "    @JsonDeserialize(using = TenThousandDeFormat.class)"
                 } else {
@@ -301,12 +306,13 @@ def calcFields(table) {
         index++
         def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
         def colName = col.getName()
+        def comment = col.getComment()
         def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
         def comm = [
                 colName : col.getName(),
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
-                commoent: col.getComment(),
+                comment: comment,
                 index   : index,
                 isId    : isId,
                 notNull : col.isNotNull(),
@@ -393,4 +399,10 @@ static boolean tableHaveBase(String comment) {
 
 static boolean fieldIsNoChange(String comment) {
     return comment.contains("(NJA)")
+}
+static void checkTableCommonent(String comment,String table){
+    if(comment == null )throw new Exception("表${table}注释不能为空")
+}
+static void checkFieldCommonent(String comment,String field,String table){
+    if(comment == null )throw new Exception("表${table}字段${field}注释不能为空")
 }

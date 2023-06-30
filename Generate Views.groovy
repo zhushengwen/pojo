@@ -154,6 +154,10 @@ def generate(out, className, table) {
     }
     def listComment = "分页"
     def method = "page"
+    def isList = tableIsList(comment)
+    if(isList){
+       comment = comment.replace("(NP)","")
+    }
     if (tableIsNoPage(comment)) {
         method = "list"
         listComment = "列表"
