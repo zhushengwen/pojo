@@ -98,9 +98,7 @@ def generate(out, className, fields, table) {
         if (!file.exists()) {
             PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
             printWriter.withPrintWriter { out2 ->
-                {
-
-                    out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
+                        out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
                             "\n" +
                             "import com.jeiat.itapi.base.CommonEntity;\n" +
                             "import lombok.Data;\n" +
@@ -114,7 +112,7 @@ def generate(out, className, fields, table) {
                             "\n" +
                             "\n" +
                             "}\n"
-                }
+
             }
         }
     }
