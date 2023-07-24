@@ -68,6 +68,7 @@ def generate(out, className, fields, table) {
     out.println "import javax.persistence.*;"
     out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
     out.println "import javax.validation.constraints.NotEmpty;"
+    out.println "import javax.validation.constraints.NotNull;"
 //    out.println "import javax.persistence.Entity;"
 //    out.println "import javax.persistence.Table;"
     out.println "import java.io.Serializable;"
@@ -92,6 +93,7 @@ def generate(out, className, fields, table) {
     }
 
     def baseName = className + "Base"
+    def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def file = new File(dir + "\\base", baseName + ".java")
 
     if (tableHaveBase(comment)) {
@@ -166,7 +168,7 @@ def generate(out, className, fields, table) {
     out.println "@Data"
     out.println "@Entity"
     out.println "@Table(name =\"" + tableName + "\")"
-    out.println "@ApiModel(value =\"${cleanComment}模型\")"
+    out.println "@ApiModel(value =\"${getTableAnno(cleanComment)}模型\")"
     def extendsStr = "implements Serializable"
     if (hasBase) {
         out.println "@EqualsAndHashCode(callSuper = false)"
@@ -237,7 +239,11 @@ def generate(out, className, fields, table) {
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.comment)) {
-                out.println "    @ApiModelProperty(value=\"${it.comment.toString()}\")"
+                def required = ""
+                if(!it.isId && it.notNull) required = ", required = true"
+                def noModify = ""
+                if(!it.isId && (isIgnore || isNja)) noModify = " [只读]"
+                out.println "    @ApiModelProperty(value=\"${it.comment.toString()}${noModify}\"${required})"
                 if (tableIsExport(comment)) {
                     out.println "    @ExcelProperty(\"${it.comment.toString()}\")"
                     if ((it.type == "Date")) {
@@ -264,6 +270,8 @@ def generate(out, className, fields, table) {
             if (it.type == "String") {
                 if (it.notNull) out.println "    @NotEmpty"
                 if (it.length != null && it.length > 0) out.println "    @ByteMaxLength(max = ${it.length})"
+            }else{
+                if (it.notNull && !it.isId) out.println "    @NotNull"
             }
 
             out.println "    private ${it.type} ${it.name};"
@@ -413,4 +421,18 @@ static String getProjectName(String projectStr){
     def ei = projectStr.indexOf(e,si + s.length())
 
     return projectStr.substring(si + s.length(),ei)
+}
+
+static String getTableAnno(String anno){
+    for (int i= 0;i<anno.length();i++){
+        if(!inChar(anno.charAt(i))){
+            return anno.substring(i)
+        }
+    }
+    return anno
+}
+static boolean  inChar(char b){
+    int s = (short)b
+
+    return (s >= 48 && s <= 57) || s == 46
 }

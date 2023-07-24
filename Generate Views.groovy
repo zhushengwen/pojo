@@ -64,7 +64,8 @@ def generate(out, className, table) {
     def javaName = javaName(className, false)
     def comment = table.getComment() as String
     def cleanComment =  getCleanComment(comment)
-    def anno = isNotEmpty(comment) ? cleanComment : "模型"
+    def modelAnno = isNotEmpty(comment) ? cleanComment : "模型"
+    def anno = getTableAnno(modelAnno)
     out.println "package $packageName"
     out.println ""
     out.println "import com.jeiat.itapi.common.Result;\n" +
@@ -108,7 +109,7 @@ def generate(out, className, table) {
             " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
             " */"
     out.println ""
-    out.println "@Api(tags = \"${anno}接口\")\n" +
+    out.println "@Api(tags = \"${modelAnno}接口\")\n" +
             "@RestController\n" +
             "@RequestMapping(\"/api/" + moduleName + "/${model}s\")\n" +
             "public class ${className}Controller {\n" +
@@ -128,7 +129,7 @@ def generate(out, className, table) {
             def isBetween = it.commoent.toString().contains("(BE)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
-            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","")
+            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","").replace("(R)","")
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){
@@ -215,7 +216,7 @@ def generate(out, className, table) {
         printList(out,specs)
         out.println "    }) Specification<${className}> spec,@ApiIgnore " + (count == 6 ? "@SortDefault(sort = {\"${rankField}\"}) " : "") + "Sort sort, @ApiIgnore HttpServletResponse response) {"
         out.println "        List<${className}> ${javaName}List = ${javaName}Service.get${className}List(spec,sort);"
-        out.println "        ExcelUtil.writeHttp(\"excel/${cleanComment}.xls\", \"${cleanComment}\", ${className}.class, ${javaName}List, response);"
+        out.println "        ExcelUtil.writeHttp(\"excel/${anno}.xls\", \"${anno}\", ${className}.class, ${javaName}List, response);"
         out.println "    }\n"
     }
 
@@ -340,4 +341,18 @@ static String getProjectName(String projectStr){
     def ei = projectStr.indexOf(e,si + s.length())
 
     return projectStr.substring(si + s.length(),ei)
+}
+
+static String getTableAnno(String anno){
+    for (int i= 0;i<anno.length();i++){
+        if(!inChar(anno.charAt(i))){
+            return anno.substring(i)
+        }
+    }
+    return anno
+}
+static boolean  inChar(char b){
+    int s = (short)b
+
+    return (s >= 48 && s <= 57) || s == 46
 }
