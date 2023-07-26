@@ -132,6 +132,14 @@ def generate(out, className, fields, table) {
         } else if (count != 6 || !contains6(it.colName)) {
             types.add(it.type)
         }
+
+        if(isNotEmpty(it.rela)){
+            def relaPackageName = getRelaPackageName(it.rela, packageName, moduleName, getRelaModeName(it.rela, moduleName, it.colName))
+            if(isNotEmpty(relaPackageName)){
+                out.println "import $relaPackageName;"
+            }
+        }
+
     }
 
     if (types.contains("Date")) {
@@ -190,7 +198,6 @@ def generate(out, className, fields, table) {
         if ((count != 4 || !contains(it.colName)) && (count != 6 || !contains6(it.colName))) {
             index = index + 1
             out.println ""
-            def isRela = false
             def isIgnore = false
             def isNja = false
             if (isNotEmpty(it.comment)) {
@@ -198,11 +205,6 @@ def generate(out, className, fields, table) {
                 it.comment = it.comment.replace("(E)", "")
                 it.comment = it.comment.replace("(DE)", "")
                 it.comment = it.comment.replace("(BE)", "")
-
-                if (it.comment.toString().contains("(R)")) {
-                    isRela = true
-                    it.comment = it.comment.replace("(R)", "")
-                }
             }
             if (isNotEmpty(it.comment)) {
 
@@ -276,14 +278,14 @@ def generate(out, className, fields, table) {
 
             out.println "    private ${it.type} ${it.name};"
 
-            if (isRela) {
+            if (it.rela) {
                 out.println ""
                 out.println "    @JsonIgnore"
                 out.println "    @OneToOne"
                 out.println "    @NotFound(action = NotFoundAction.IGNORE)"
                 out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
-                def relaName = it.colName.replace("_id", "")
-                out.println "    private " + javaName(moduleName + "_" + relaName, true) + " " + javaName(relaName, false) + ";"
+                def typeName = getRelaModeName(it.rela, moduleName, it.colName)
+                out.println "    private " + typeName + " " + getRelaVarName(typeName) + ";"
             }
 
         }
@@ -314,6 +316,8 @@ def calcFields(table) {
         def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
         def colName = col.getName()
         def comment = col.getComment()
+        def rela = getRela(comment)
+        comment = removeRela(comment,rela)
         def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
         def comm = [
                 colName : col.getName(),
@@ -323,7 +327,8 @@ def calcFields(table) {
                 index   : index,
                 isId    : isId,
                 notNull : col.isNotNull(),
-                length  : col.getDataType().getLength()
+                length  : col.getDataType().getLength(),
+                rela    : rela
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -333,7 +338,7 @@ def calcFields(table) {
 
 // 处理类名（这里是因为我的表都是以t_命名的，所以需要处理去掉生成类名时的开头的T，
 // 如果你不需要那么请查找用到了 javaClassName这个方法的地方修改为 javaName 即可）
-def javaClassName(str, capitalize) {
+static String javaClassName(str, capitalize) {
     def s = com.intellij.psi.codeStyle.NameUtil.splitNameIntoWords(str)
             .collect { Case.LOWER.apply(it).capitalize() }
             .join("")
@@ -343,7 +348,7 @@ def javaClassName(str, capitalize) {
     capitalize || s.length() == 1 ? s : Case.LOWER.apply(s[0]) + s[1..-1]
 }
 
-def javaName(str, capitalize) {
+static String javaName(str, capitalize) {
 //    def s = str.split(/(?<=[^\p{IsLetter}])/).collect { Case.LOWER.apply(it).capitalize() }
 //            .join("").replaceAll(/[^\p{javaJavaIdentifierPart}]/, "_")
 //    capitalize || s.length() == 1? s : Case.LOWER.apply(s[0]) + s[1..-1]
@@ -354,7 +359,7 @@ def javaName(str, capitalize) {
     capitalize || s.length() == 1 ? s : Case.LOWER.apply(s[0]) + s[1..-1]
 }
 
-def isNotEmpty(content) {
+static boolean isNotEmpty(content) {
     return content != null && content.toString().trim().length() > 0
 }
 
@@ -435,4 +440,38 @@ static boolean  inChar(char b){
     int s = (short)b
 
     return (s >= 48 && s <= 57) || s == 46
+}
+
+static String getRela(String common){
+    def pattern = ~/\(R(:\w+)?\)/
+    def matcher = common =~ pattern
+    if(matcher.find()){
+        if(matcher.groupCount()>0){
+            def str = matcher.group(0)
+            if(str.contains(":")){
+                return str.replace("(R:","").replace(")","")
+            }else{
+                return ""
+            }
+        }
+    }
+    return null
+}
+static String removeRela(String common,String rela){
+    if(rela == null)return common
+    if(rela.length() == 0)return common.replace("(R)","")
+    return common.replace("(R:" + rela + ")","")
+}
+static String getRelaModeName(String rela,String thisMod,String colName){
+    String name = colName.replace("_id", "")
+    return javaName(( rela.length() == 0 ? thisMod : rela ) + javaName(name,true),true)
+}
+static String getRelaVarName(String name){
+    return javaName(name,false)
+}
+static String getRelaPackageName(String rela,String thisPackageName,String thisMod, String entityTypeName){
+    if(isNotEmpty(rela)){
+        return thisPackageName.replace(".$thisMod.",".$rela.") + "." + entityTypeName
+    }
+    return null
 }

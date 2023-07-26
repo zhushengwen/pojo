@@ -129,7 +129,8 @@ def generate(out, className, table) {
             def isBetween = it.commoent.toString().contains("(BE)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
-            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","").replace("(R)","")
+            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","")
+            colComment = removeRela(colComment,getRela(colComment))
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){
@@ -355,4 +356,25 @@ static boolean  inChar(char b){
     int s = (short)b
 
     return (s >= 48 && s <= 57) || s == 46
+}
+
+static String getRela(String common){
+    def pattern = ~/\(R(:\w+)?\)/
+    def matcher = common =~ pattern
+    if(matcher.find()){
+        if(matcher.groupCount()>0){
+            def str = matcher.group(0)
+            if(str.contains(":")){
+                return str.replace("(R:","").replace(")","")
+            }else{
+                return ""
+            }
+        }
+    }
+    return null
+}
+static String removeRela(String common,String rela){
+    if(rela == null)return common
+    if(rela.length() == 0)return common.replace("(R)","")
+    return common.replace("(R:" + rela + ")","")
 }
