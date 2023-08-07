@@ -63,7 +63,7 @@ def generate(out, className, table) {
     def model = table.getName()
     def javaName = javaName(className, false)
     def comment = table.getComment() as String
-    def cleanComment =  getCleanComment(comment)
+    def cleanComment =  getCleanTableComment(comment)
     def modelAnno = isNotEmpty(comment) ? cleanComment : "模型"
     def anno = getTableAnno(modelAnno)
     out.println "package $packageName"
@@ -78,6 +78,7 @@ def generate(out, className, table) {
             "import io.swagger.annotations.ApiImplicitParams;\n" +
             "import io.swagger.annotations.ApiOperation;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.Equal;\n" +
+            "import net.kaczmarzyk.spring.data.jpa.domain.In;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.GreaterThanOrEqual;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.LessThanOrEqual;\n" +
             "import net.kaczmarzyk.spring.data.jpa.domain.Like;\n" +
@@ -98,7 +99,9 @@ def generate(out, className, table) {
         out.println "import javax.servlet.http.HttpServletResponse;"
         out.println "import com.jeiat.itapi.common.ExcelUtil;"
     }
-
+    if(tableIsMove(comment)){
+        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+    }
     out.println "import javax.transaction.Transactional;"
     out.println "import javax.validation.Valid;"
     out.println "import java.util.List;"
@@ -120,8 +123,8 @@ def generate(out, className, table) {
     def params = []
     def paramsPage = []
     def specs = []
-    params.add("            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer\"),")
-    specs.add("            @Spec(path = \"id\", params = \"id\", spec = Equal.class),")
+    params.add("            @ApiImplicitParam(name = \"ids\", value = \"编号\", dataType = \"integer[]\"),")
+    specs.add("            @Spec(path = \"id\", params = \"ids\", paramSeparator = ',', spec = In.class),")
     fields.each() {
         if (isNotEmpty(it.commoent)) {
             def isEqal = it.commoent.toString().contains("(E)")
@@ -129,8 +132,7 @@ def generate(out, className, table) {
             def isBetween = it.commoent.toString().contains("(BE)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
-            def colComment = it.commoent.toString().replace("(E)","").replace("(L)","").replace("(DE)","").replace("(BE)","")
-            colComment = removeRela(colComment,getRela(colComment))
+            def colComment = getCleanFieldComment(it.commoent)
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){
@@ -248,7 +250,19 @@ def generate(out, className, table) {
             "        ${javaName}Service.delete${className}(id);\n" +
             "        return Result.ok();\n" +
             "    }\n" +
-            "}"
+            
+            "    @PostMapping(\"move/{id}\")\n" +
+            "    @ApiOperation(\"移动${anno}\")\n" +
+            "    @Log(\"移动${anno}\")\n" +
+            "    @PreAuthorize(\"@el.check(0)\")\n" +
+            "    public Result<Integer> move(@PathVariable(\"id\") ${className} ${javaName}, @Valid @RequestBody MoveRequest moveRequest) {\n" +
+            "        ${javaName}Service.move${className}(${javaName},moveRequest);\n" +
+            "        return Result.ok();\n" +
+            "    }\n" +
+            
+            "}" 
+
+
 }
 
 def javaClassName(str, capitalize) {
@@ -280,11 +294,14 @@ def calcFields(table) {
         def typeStr = typeMapping.find { p, t -> p.matcher(spec).find() }.value
         def colName = col.getName()
         def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
+        def comment = col.getComment()
+        def rela = getRela(comment)
+        comment = removeRela(comment,rela)
         def comm = [
                 colName : col.getName(),
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
-                commoent: col.getComment(),
+                commoent: comment,
                 annos   : " @Column(name = \"" + col.getName() + "\")" + "\n" + "    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId ? ",access = JsonProperty.Access.READ_ONLY" : "") + ")",
                 isId    : isId,
         ]
@@ -308,10 +325,19 @@ static boolean containRank(fields){
     }
     return rank
 }
-static String getCleanComment(String comment) {
-    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
+static String getCleanTableComment(String comment) {
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "").replace("(M)", "")
 }
-
+static String getCleanFieldComment(String comment) {
+    return comment.toString()
+            .replace("(DE)","")
+            .replace("(E)","")
+            .replace("(T)","")
+            .replace("(I)","")
+            .replace("(BE)","")
+            .replace("(NJA)","")
+            .replace("(L)","")
+}
 static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")
 }
@@ -323,7 +349,9 @@ static boolean tableIsExport(String comment) {
 static boolean tableIsList(String comment) {
     return comment.contains("(L)")
 }
-
+static boolean tableIsMove(String comment) {
+    return comment.contains("(M)")
+}
 static boolean tableHaveBase(String comment) {
     return comment.contains("(B)")
 }

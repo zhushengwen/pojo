@@ -63,7 +63,7 @@ def getPackageName(dir) {
 }
 
 def generate(out, className, table) {
-
+    def tableComment = table.getComment()
     def javaName = javaName(className,false)
 
     out.println "package $packageName"
@@ -73,6 +73,9 @@ def generate(out, className, table) {
     out.println "import org.springframework.data.domain.Pageable;"
     out.println "import org.springframework.data.domain.Sort;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
+    if(tableIsMove(tableComment)){
+        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+    }
 
     out.println "import java.util.List;"
 
@@ -98,9 +101,16 @@ def generate(out, className, table) {
 
     out.println "    void delete${className}(Long id);"
     out.println ""
+
+    if(tableIsMove(tableComment)) {
+        out.println "    void move${className}(${className} $javaName, MoveRequest moveRequest);"
+        out.println ""
+    }
+
     out.println "}"
 }
 def generateImpl(out, className, table) {
+    def tableComment = table.getComment()
     def fields = calcFields(table)
     def count = 0
     fields.each() {
@@ -119,6 +129,10 @@ def generateImpl(out, className, table) {
     out.println "import org.springframework.beans.factory.annotation.Autowired;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
     out.println "import org.springframework.stereotype.Service;"
+    if(tableIsMove(tableComment)){
+        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+    }
+
 
     out.println "import javax.validation.Valid;"
     out.println "import java.util.List;"
@@ -179,8 +193,17 @@ def generateImpl(out, className, table) {
     }else{
         out.println            "        ${javaName}Repository.deleteById(id);"
     }
-
     out.println "    }\n"
+
+    if(tableIsMove(tableComment)){
+        out.println ""
+        out.println "    @Override\n" +
+                "    public void move${className}(${className} ${javaName}, MoveRequest moveRequest) {\n" +
+                "        ${javaName}Repository.moveTo(${javaName},moveRequest.getMove());\n" +
+                "    }\n"
+    }
+
+
     out.println "}"
 }
 
@@ -236,25 +259,11 @@ static boolean contains6(String element){
     return contains(element) || "rank" == element  || "soft_delete" == element
 }
 
-static String getCleanComment(String comment) {
-    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
+
+static boolean tableIsMove(String comment) {
+    return comment.contains("(M)")
 }
 
-static boolean tableIsNoPage(String comment) {
-    return comment.contains("(NP)")
-}
-
-static boolean tableIsExport(String comment) {
-    return comment.contains("(E)")
-}
-
-static boolean tableIsList(String comment) {
-    return comment.contains("(L)")
-}
-
-static boolean tableHaveBase(String comment) {
-    return comment.contains("(B)")
-}
 
 static String getProjectName(String projectStr){
 

@@ -61,7 +61,7 @@ def generate(out, className, fields, table) {
     fields.each() {
         if (contains(it.colName)) count++
     }
-    def cleanComment = getCleanComment(comment)
+    def cleanComment = getCleanTableComment(comment)
     def isExport = tableIsExport(comment)
     out.println "package $packageName;"
     out.println ""
@@ -389,8 +389,8 @@ static boolean contains6(String element) {
     return contains(element) || "rank" == element || "soft_delete" == element
 }
 
-static String getCleanComment(String comment) {
-    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "")
+static String getCleanTableComment(String comment) {
+    return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "").replace("(M)", "")
 }
 
 static boolean tableIsNoPage(String comment) {
