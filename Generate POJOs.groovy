@@ -34,7 +34,11 @@ SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.
 def generate(table) {
     def className = javaClassName(table.getName(), true)
     moduleName = table.getName().split(/_/)[0]
-    def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
+    def moduleSub = ""
+    if(!"System".equals(moduleName)){
+        moduleSub = "\\modules\\" + moduleName
+    }
+    def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi" + moduleSub + "\\model"
     def fields = calcFields(table)
     def tableName = table.getName()
     checkTableCommonent(table.getComment(), tableName)
@@ -419,13 +423,15 @@ static void checkFieldCommonent(String comment,String field,String table){
     if(comment == null )throw new Exception("表${table}字段${field}注释不能为空")
 }
 static String getProjectName(String projectStr){
-
     def s = "componentStore="
     def e = ")"
     def si = projectStr.indexOf(s)
     def ei = projectStr.indexOf(e,si + s.length())
-
-    return projectStr.substring(si + s.length(),ei)
+    def project = projectStr.substring(si + s.length(),ei)
+    if(project.endsWith(".ipr")){
+        project = new File(project).getParent()
+    }
+    return project
 }
 
 static String getTableAnno(String anno){

@@ -34,7 +34,11 @@ SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.
 
 def generate(table, dir) {
     moduleName = table.getName().split(/_/)[0]
-    dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\rest"
+    def moduleSub = ""
+    if(!"System".equals(moduleName)){
+        moduleSub = "\\modules\\" + moduleName
+    }
+    dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi" + moduleSub + "\\rest"
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
@@ -363,13 +367,15 @@ static void printList(out,params){
 }
 
 static String getProjectName(String projectStr){
-
     def s = "componentStore="
     def e = ")"
     def si = projectStr.indexOf(s)
     def ei = projectStr.indexOf(e,si + s.length())
-
-    return projectStr.substring(si + s.length(),ei)
+    def project = projectStr.substring(si + s.length(),ei)
+    if(project.endsWith(".ipr")){
+        project = new File(project).getParent()
+    }
+    return project
 }
 
 static String getTableAnno(String anno){
