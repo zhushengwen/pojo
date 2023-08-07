@@ -70,12 +70,17 @@ def generate(out, className, table) {
     def cleanComment =  getCleanTableComment(comment)
     def modelAnno = isNotEmpty(comment) ? cleanComment : "模型"
     def anno = getTableAnno(modelAnno)
+
+    def moduleSub = ""
+    if(!"System".equals(moduleName)){
+        moduleSub = "modules." + moduleName + "."
+    }
     out.println "package $packageName"
     out.println ""
     out.println "import com.jeiat.itapi.common.Result;\n" +
             "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
-            "import com.jeiat.itapi.modules." + moduleName + ".model.${className};\n" +
-            "import com.jeiat.itapi.modules." + moduleName + ".service.${className}Service;\n" +
+            "import com.jeiat.itapi." + moduleSub + "model.${className};\n" +
+            "import com.jeiat.itapi." + moduleSub + "service.${className}Service;\n" +
             "import com.jeiat.itapi.utils.AppUtils;\n" +
             "import io.swagger.annotations.Api;\n" +
             "import io.swagger.annotations.ApiImplicitParam;\n" +
@@ -253,19 +258,20 @@ def generate(out, className, table) {
             "    public Result<Integer> delete(@PathVariable(\"id\") Long id) {\n" +
             "        ${javaName}Service.delete${className}(id);\n" +
             "        return Result.ok();\n" +
-            "    }\n" +
-            
-            "    @PostMapping(\"move/{id}\")\n" +
-            "    @ApiOperation(\"移动${anno}\")\n" +
-            "    @Log(\"移动${anno}\")\n" +
-            "    @PreAuthorize(\"@el.check(0)\")\n" +
-            "    public Result<Integer> move(@PathVariable(\"id\") ${className} ${javaName}, @Valid @RequestBody MoveRequest moveRequest) {\n" +
-            "        ${javaName}Service.move${className}(${javaName},moveRequest);\n" +
-            "        return Result.ok();\n" +
-            "    }\n" +
-            
-            "}" 
+            "    }\n"
 
+    if(tableIsMove(comment)){
+        out.println   "\n" +
+                "    @PostMapping(\"move/{id}\")\n" +
+                "    @ApiOperation(\"移动${anno}\")\n" +
+                "    @Log(\"移动${anno}\")\n" +
+                "    @PreAuthorize(\"@el.check(0)\")\n" +
+                "    public Result<Integer> move(@PathVariable(\"id\") ${className} ${javaName}, @Valid @RequestBody MoveRequest moveRequest) {\n" +
+                "        ${javaName}Service.move${className}(${javaName},moveRequest);\n" +
+                "        return Result.ok();\n" +
+                "    }\n" 
+    }
+    out.println "}"
 
 }
 
