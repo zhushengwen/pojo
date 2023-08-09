@@ -71,19 +71,23 @@ def generate(out, className, fields, table) {
     out.println ""
     out.println "import javax.persistence.*;"
     out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
+    out.println "import com.jeiat.itapi.common.DictUtil;"
     out.println "import javax.validation.constraints.NotEmpty;"
     out.println "import javax.validation.constraints.NotNull;"
 //    out.println "import javax.persistence.Entity;"
 //    out.println "import javax.persistence.Table;"
     out.println "import java.io.Serializable;"
+    out.println "import com.jeiat.itapi.utils.AppUtils;"
 //  out.println "import lombok.Getter;"
 //  out.println "import lombok.Setter;"
 //  out.println "import lombok.ToString;"
     out.println "import lombok.Data;"
+    out.println "import lombok.Getter;"
     out.println "import com.fasterxml.jackson.annotation.JsonAlias;"
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
+    out.println "import lombok.AllArgsConstructor;"
     out.println "import com.fasterxml.jackson.annotation.JsonIgnore;"
     out.println "import org.hibernate.annotations.NotFound;"
     out.println "import org.hibernate.annotations.NotFoundAction;"
@@ -95,7 +99,7 @@ def generate(out, className, fields, table) {
         out.println "import com.jeiat.itapi.base.CommonEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
-
+    out.println "import java.util.List;"
     def baseName = className + "Base"
     def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def file = new File(dir + "\\base", baseName + ".java")
@@ -143,7 +147,13 @@ def generate(out, className, fields, table) {
                 out.println "import $relaPackageName;"
             }
         }
-
+        if(isNotEmpty(it.join)){
+            String relaPackageName = it.join.split(/_/)[0]
+            relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, javaName(it.join,true))
+            if(isNotEmpty(relaPackageName)){
+                out.println "import $relaPackageName;"
+            }
+        }
     }
 
     if (types.contains("Date")) {
@@ -282,7 +292,7 @@ def generate(out, className, fields, table) {
 
             out.println "    private ${it.type} ${it.name};"
 
-            if (it.rela) {
+            if(it.rela != null){
                 out.println ""
                 out.println "    @JsonIgnore"
                 out.println "    @OneToOne"
@@ -290,11 +300,92 @@ def generate(out, className, fields, table) {
                 out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
                 def typeName = getRelaModeName(it.rela, moduleName, it.colName)
                 out.println "    private " + typeName + " " + getRelaVarName(typeName) + ";"
+
+                index = index + 1
+                out.println ""
+                String dictColName = it.colName
+                dictColName = trimId(dictColName)
+                javaDictName = javaName(dictColName,true)
+                dictColName = dictColName + "_name"
+                String javaDictColName = javaName(dictColName,true)
+                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+                out.println "    private String get${javaDictColName}(){\n" +
+                        "        return AppUtils.ofNullable(${getRelaVarName(typeName)},${typeName}::getName);\n" +
+                        "    }"
             }
 
+            if(isNotEmpty(it.dict)){
+                index = index + 1
+                out.println ""
+                out.println "    @Transient"
+                String dictColName = it.colName
+                dictColName = trimId(dictColName)
+                it.javaDictName = javaName(dictColName,true)
+                dictColName = dictColName + "_name"
+                String javaDictColName = javaName(dictColName,false)
+                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+                out.println "    private String $javaDictColName;"
+                it.dictColName = dictColName
+                
+            }
+
+            if(isNotEmpty(it.join)){
+                index = index + 1
+                out.println ""
+                out.println "    @Transient"
+                out.println "    @JsonIgnore"
+                out.println "    private ${javaName(it.join,true)} ${javaName(it.join,false)};"
+                out.println ""
+                String dictColName = it.colName
+                dictColName = trimId(dictColName)
+                javaDictName = javaName(dictColName,true)
+                dictColName = dictColName + "_name"
+                String javaDictColName = javaName(dictColName,true)
+                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+                out.println "    private String get${javaDictColName}(){\n" +
+                        "        return AppUtils.ofNullable(${javaName(it.join,false)},${javaName(it.join,true)}::getName);\n" +
+                        "    }"
+            }
         }
     }
-
+    out.println ""
+    out.println "    //dict"
+    out.println "    @Getter\n" +
+            "    @AllArgsConstructor\n" +
+            "    public enum DictTypeEnum {"
+    fields.each() {
+        if (isNotEmpty(it.dict)) {
+            out.print         "\n" +
+                    "        //${it.comment}\n" +
+                    "        ${it.javaDictName}(\"${it.dict}\"),"
+        }
+    }
+    out.print         ";\n" +
+            "        private final String type;\n" +
+            "\n" +
+            "        public static void join(List<${className}> list) {\n" +
+            "            String[] types = new String[]{"
+    fields.each() {
+        if (isNotEmpty(it.dict)) {
+            out.print         "\n" +
+                    "                    ${it.javaDictName}.getType(),"
+        }
+    }
+    out.print         "\n" +
+            "            };\n" +
+            "            new DictUtil.DictJoiner<>(list, types)"
+    fields.each() {
+        if (isNotEmpty(it.dict)) {
+            out.print         "\n" +
+                    "                    .joinValue(${className}::get${javaName(it.name,true)}, ${className}::set${javaName(it.dictColName,true)})"
+        }
+    }
+    out.print         ";\n" +
+    "        }\n" +
+            "    }"
     // 输出get/set方法
 //    fields.each() {
 //        out.println ""
@@ -332,7 +423,9 @@ def calcFields(table) {
                 isId    : isId,
                 notNull : col.isNotNull(),
                 length  : col.getDataType().getLength(),
-                rela    : rela
+                rela    : rela,
+                dict    : getDict(comment),
+                join    : getJoin(comment)
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -448,6 +541,22 @@ static boolean  inChar(char b){
     return (s >= 48 && s <= 57) || s == 46
 }
 
+static String getDict(String common){
+    def pattern = ~/\((字典:\w+)?\)/
+    def matcher = common =~ pattern
+    if(matcher.find()){
+        if(matcher.groupCount()>0){
+            def str = matcher.group(0)
+            if(str.contains(":")){
+                return str.replace("(字典:","").replace(")","")
+            }else{
+                return ""
+            }
+        }
+    }
+    return null
+}
+
 static String getRela(String common){
     def pattern = ~/\(R(:\w+)?\)/
     def matcher = common =~ pattern
@@ -478,6 +587,30 @@ static String getRelaVarName(String name){
 static String getRelaPackageName(String rela,String thisPackageName,String thisMod, String entityTypeName){
     if(isNotEmpty(rela)){
         return thisPackageName.replace(".$thisMod.",".$rela.") + "." + entityTypeName
+    }
+    return null
+}
+
+static String trimId(String name){
+    if(name.endsWith("_id"))
+    {
+        return name.substring(0,name.length()-3)
+    }
+    return name
+}
+
+static String getJoin(String common){
+    def pattern = ~/\((关联:\w+)?\)/
+    def matcher = common =~ pattern
+    if(matcher.find()){
+        if(matcher.groupCount()>0){
+            def str = matcher.group(0)
+            if(str.contains(":")){
+                return str.replace("(关联:","").replace(")","")
+            }else{
+                return ""
+            }
+        }
     }
     return null
 }

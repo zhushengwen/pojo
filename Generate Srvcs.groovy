@@ -69,6 +69,7 @@ def getPackageName(dir) {
 def generate(out, className, table) {
     def tableComment = table.getComment()
     def javaName = javaName(className,false)
+    def fields = calcFields(table)
 
     out.println "package $packageName"
     out.println ""
@@ -96,6 +97,20 @@ def generate(out, className, table) {
 
     out.println "    List<$className> get${className}List(Specification<$className> spec, Sort sort);"
     out.println ""
+
+    out.println "    void joinAll(List<${className}> list);"
+    out.println ""
+
+    out.println "    void joinDicts(List<${className}> list);"
+    out.println ""
+
+    fields.each() {
+        if(isNotEmpty(it.join)){
+            String colName = it.colName
+            colName = javaClassName(trimId(colName),true)
+            out.println "    void join${colName}(List<${className}> list);"
+        }
+    }
 
     out.println "    ${className} save${className}(${className} $javaName);"
     out.println ""
@@ -133,6 +148,7 @@ def generateImpl(out, className, table) {
     out.println "import org.springframework.beans.factory.annotation.Autowired;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
     out.println "import org.springframework.stereotype.Service;"
+    out.println "import com.jeiat.itapi.component.EntityJoiner;"
     if(tableIsMove(tableComment)){
         out.println "import com.jeiat.itapi.dto.MoveRequest;"
     }
@@ -152,25 +168,62 @@ def generateImpl(out, className, table) {
     out.println "    @Autowired\n" +
                 "    ${className}Repository ${javaName}Repository;"
     out.println ""
-    out.println "    @Override\n" +
-                "    public Page<${className}> get${className}Page(Specification<${className}> spec, Pageable pageable) {"
-    if(count == 6){
-        out.println  "        return ${javaName}Repository.findAllNormal(spec, pageable);"
-    }else{
-        out.println  "        return ${javaName}Repository.findAll(spec, pageable);"
-    }
-    out.println            "    }"
+
+    out.println "    @Autowired\n" +
+            "    EntityJoiner entityJoiner;"
     out.println ""
 
     out.println "    @Override\n" +
-            "    public List<${className}> get${className}List(Specification<${className}> spec, Sort sort) {"
+                "    public Page<${className}> get${className}Page(Specification<${className}> spec, Pageable pageable) {"
     if(count == 6){
-        out.println  "        return ${javaName}Repository.findAllNormal(spec, sort);"
+        out.println  "        Page<${className}> pageList = ${javaName}Repository.findAllNormal(spec, pageable);" 
     }else{
-        out.println  "        return ${javaName}Repository.findAll(spec, sort);"
+        out.println  "        Page<${className}> pageList = ${javaName}Repository.findAll(spec, pageable);"
     }
+    out.println "        joinAll(pageList.getContent());"
+    out.println "        return pageList;"
     out.println            "    }"
     out.println ""
+    
+    out.println "    @Override\n" +
+            "    public List<${className}> get${className}List(Specification<${className}> spec, Sort sort) {"
+    if(count == 6){
+        out.println  "        List<${className}> list = ${javaName}Repository.findAllNormal(spec, sort);"
+    }else{
+        out.println  "        List<${className}> list = ${javaName}Repository.findAll(spec, sort);"
+    }
+    out.println "        joinAll(list);"
+    out.println "        return list;"
+    out.println            "    }"
+    out.println ""
+    out.println "    @Override"
+    out.println "    public void joinAll(List<${className}> list){\n" +
+            "        joinDicts(list);"
+    fields.each() {
+        if(isNotEmpty(it.join)){
+            String colName = it.colName
+            colName = javaClassName(trimId(colName),true)
+            out.println "        join${colName}(list);"
+        }
+    }
+    out.println        "    }"
+    out.println  "    @Override"
+    out.println  "    public void joinDicts(List<${className}> list){\n" +
+            "        ${className}.DictTypeEnum.join(list);\n" +
+            "    }"
+    out.println ""
+
+    fields.each() {
+        if(isNotEmpty(it.join)){
+            String colName = it.colName
+            colName = javaClassName(trimId(colName),true)
+            out.println "    //关联表: ${it.join}"
+            out.println "    @Override"
+            out.println "    public void join${colName}(List<${className}> list){\n" +
+                    "        entityJoiner.joinBean(list,${className}::get${javaClassName(it.colName,true)}, ${className}::get${javaClassName(it.join,true)});\n" +
+                    "    }"
+        }
+    }
 
     out.println "    @Override\n" +
                 "    public ${className} save${className}(${className} ${javaName}) {"
@@ -245,9 +298,10 @@ def calcFields(table) {
                 colName : col.getName(),
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
-                commoent: col.getComment(),
+                comment: col.getComment(),
                 annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
                 isId : isId,
+                join: getJoin(col.getComment())
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -279,4 +333,28 @@ static String getProjectName(String projectStr){
         project = new File(project).getParent()
     }
     return project
+}
+
+static String getJoin(String common){
+    def pattern = ~/\((关联:\w+)?\)/
+    def matcher = common =~ pattern
+    if(matcher.find()){
+        if(matcher.groupCount()>0){
+            def str = matcher.group(0)
+            if(str.contains(":")){
+                return str.replace("(关联:","").replace(")","")
+            }else{
+                return ""
+            }
+        }
+    }
+    return null
+}
+
+static String trimId(String name){
+    if(name.endsWith("_id"))
+    {
+        return name.substring(0,name.length()-3)
+    }
+    return name
 }
