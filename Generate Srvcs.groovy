@@ -112,6 +112,7 @@ def generate(out, className, table) {
         }
     }
 
+    out.println ""
     out.println "    ${className} save${className}(${className} $javaName);"
     out.println ""
 
