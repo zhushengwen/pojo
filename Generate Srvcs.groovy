@@ -69,25 +69,24 @@ def getPackageName(dir) {
 def generate(out, className, table) {
     def tableComment = table.getComment()
     def javaName = javaName(className,false)
-    def fields = calcFields(table)
 
     out.println "package $packageName"
     out.println ""
+    if(tableIsMove(tableComment)){
+        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+    }
     out.println "import $modelClassName;"
     out.println "import org.springframework.data.domain.Page;"
     out.println "import org.springframework.data.domain.Pageable;"
     out.println "import org.springframework.data.domain.Sort;"
     out.println "import org.springframework.data.jpa.domain.Specification;"
-    if(tableIsMove(tableComment)){
-        out.println "import com.jeiat.itapi.dto.MoveRequest;"
-    }
-
+    out.println ""
     out.println "import java.util.List;"
 
     out.println ""
-    out.println "/**\n" +
-            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-            " */"
+//    out.println "/**\n" +
+//            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
+//            " */"
     out.println ""
     out.println "public interface ${className}Service {"
     out.println ""
@@ -98,21 +97,6 @@ def generate(out, className, table) {
     out.println "    List<$className> get${className}List(Specification<$className> spec, Sort sort);"
     out.println ""
 
-    out.println "    void joinAll(List<${className}> list);"
-    out.println ""
-
-    out.println "    void joinDicts(List<${className}> list);"
-    out.println ""
-
-    fields.each() {
-        if(isNotEmpty(it.join)){
-            String colName = it.colName
-            colName = javaClassName(trimId(colName),true)
-            out.println "    void join${colName}(List<${className}> list);"
-        }
-    }
-
-    out.println ""
     out.println "    ${className} save${className}(${className} $javaName);"
     out.println ""
 
@@ -140,38 +124,32 @@ def generateImpl(out, className, table) {
 
     out.println "package $packageName"
     out.println ""
-    out.println "import $modelClassName;"
-    out.println "import $repoClassName;"
-    out.println "import $serviceClassName;"
-    out.println "import org.springframework.data.domain.Page;"
-    out.println "import org.springframework.data.domain.Pageable;"
-    out.println "import org.springframework.data.domain.Sort;"
-    out.println "import org.springframework.beans.factory.annotation.Autowired;"
-    out.println "import org.springframework.data.jpa.domain.Specification;"
-    out.println "import org.springframework.stereotype.Service;"
-    out.println "import com.jeiat.itapi.component.EntityJoiner;"
     if(tableIsMove(tableComment)){
         out.println "import com.jeiat.itapi.dto.MoveRequest;"
     }
+    out.println "import $modelClassName;"
+    out.println "import $repoClassName;"
+    out.println "import $serviceClassName;"
+    out.println "import org.springframework.beans.factory.annotation.Autowired;"
+    out.println "import org.springframework.data.domain.Page;"
+    out.println "import org.springframework.data.domain.Pageable;"
+    out.println "import org.springframework.data.domain.Sort;"
+    out.println "import org.springframework.data.jpa.domain.Specification;"
+    out.println "import org.springframework.stereotype.Service;"
 
-
-    out.println "import javax.validation.Valid;"
+    out.println ""
     out.println "import java.util.List;"
 
     out.println ""
-    out.println "/**\n" +
-            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-            " */"
+//    out.println "/**\n" +
+//            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
+//            " */"
     out.println ""
     out.println "@Service"
     out.println "public class ${className}ServiceImpl implements ${className}Service {"
     out.println ""
     out.println "    @Autowired\n" +
                 "    ${className}Repository ${javaName}Repository;"
-    out.println ""
-
-    out.println "    @Autowired\n" +
-            "    EntityJoiner entityJoiner;"
     out.println ""
 
     out.println "    @Override\n" +
@@ -181,7 +159,7 @@ def generateImpl(out, className, table) {
     }else{
         out.println  "        Page<${className}> pageList = ${javaName}Repository.findAll(spec, pageable);"
     }
-    out.println "        joinAll(pageList.getContent());"
+    out.println "        ${className}.Joiner.joinAll(pageList.getContent());"
     out.println "        return pageList;"
     out.println            "    }"
     out.println ""
@@ -193,38 +171,10 @@ def generateImpl(out, className, table) {
     }else{
         out.println  "        List<${className}> list = ${javaName}Repository.findAll(spec, sort);"
     }
-    out.println "        joinAll(list);"
+    out.println "        ${className}.Joiner.joinAll(list);"
     out.println "        return list;"
     out.println            "    }"
     out.println ""
-    out.println "    @Override"
-    out.println "    public void joinAll(List<${className}> list){\n" +
-            "        joinDicts(list);"
-    fields.each() {
-        if(isNotEmpty(it.join)){
-            String colName = it.colName
-            colName = javaClassName(trimId(colName),true)
-            out.println "        join${colName}(list);"
-        }
-    }
-    out.println        "    }"
-    out.println  "    @Override"
-    out.println  "    public void joinDicts(List<${className}> list){\n" +
-            "        ${className}.DictTypeEnum.join(list);\n" +
-            "    }"
-    out.println ""
-
-    fields.each() {
-        if(isNotEmpty(it.join)){
-            String colName = it.colName
-            colName = javaClassName(trimId(colName),true)
-            out.println "    //关联表: ${it.join}"
-            out.println "    @Override"
-            out.println "    public void join${colName}(List<${className}> list){\n" +
-                    "        entityJoiner.joinBean(list,${className}::get${javaClassName(it.colName,true)}, ${className}::get${javaClassName(it.join,true)});\n" +
-                    "    }"
-        }
-    }
 
     out.println "    @Override\n" +
                 "    public ${className} save${className}(${className} ${javaName}) {"
@@ -257,7 +207,7 @@ def generateImpl(out, className, table) {
         out.println ""
         out.println "    @Override\n" +
                 "    public void move${className}(${className} ${javaName}, MoveRequest moveRequest) {\n" +
-                "        ${javaName}Repository.moveTo(${javaName},moveRequest.getMove());\n" +
+                "        ${javaName}Repository.moveTo(${javaName}, moveRequest.getMove());\n" +
                 "    }\n"
     }
 
@@ -301,8 +251,7 @@ def calcFields(table) {
                 type    : typeStr,
                 comment: col.getComment(),
                 annos   : " @Column(name = \"" + col.getName() + "\")"+"\n"+"    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId?",access = JsonProperty.Access.READ_ONLY":"") + ")",
-                isId : isId,
-                join: getJoin(col.getComment())
+                isId : isId
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -334,28 +283,4 @@ static String getProjectName(String projectStr){
         project = new File(project).getParent()
     }
     return project
-}
-
-static String getJoin(String common){
-    def pattern = ~/\((关联:\w+)?\)/
-    def matcher = common =~ pattern
-    if(matcher.find()){
-        if(matcher.groupCount()>0){
-            def str = matcher.group(0)
-            if(str.contains(":")){
-                return str.replace("(关联:","").replace(")","")
-            }else{
-                return ""
-            }
-        }
-    }
-    return null
-}
-
-static String trimId(String name){
-    if(name.endsWith("_id"))
-    {
-        return name.substring(0,name.length()-3)
-    }
-    return name
 }

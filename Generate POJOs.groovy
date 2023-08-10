@@ -35,7 +35,7 @@ def generate(table) {
     def className = javaClassName(table.getName(), true)
     moduleName = table.getName().split(/_/)[0]
     def moduleSub = ""
-    if(!"System".equals(moduleName)){
+    if (!"System".equals(moduleName)) {
         moduleSub = "\\modules\\" + moduleName
     }
     def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi" + moduleSub + "\\model"
@@ -43,7 +43,7 @@ def generate(table) {
     def tableName = table.getName()
     checkTableCommonent(table.getComment(), tableName)
     fields.each() {
-        checkFieldCommonent(it.comment,it.colName,tableName)
+        checkFieldCommonent(it.comment, it.colName, tableName)
     }
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + ".java")), "UTF-8"))
@@ -69,15 +69,22 @@ def generate(out, className, fields, table) {
     def isExport = tableIsExport(comment)
     out.println "package $packageName;"
     out.println ""
-    out.println "import javax.persistence.*;"
+
     out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
     out.println "import com.jeiat.itapi.common.DictUtil;"
-    out.println "import javax.validation.constraints.NotEmpty;"
-    out.println "import javax.validation.constraints.NotNull;"
+    out.println "import com.jeiat.itapi.component.EntityJoiner;"
+
+    out.println "import com.jeiat.itapi.utils.AppUtils;"
+    out.println "import com.jeiat.itapi.utils.SpringContextHolder;"
+    out.println "import io.swagger.annotations.ApiModel;"
+    out.println "import io.swagger.annotations.ApiModelProperty;"
+
 //    out.println "import javax.persistence.Entity;"
 //    out.println "import javax.persistence.Table;"
+    out.println ""
     out.println "import java.io.Serializable;"
-    out.println "import com.jeiat.itapi.utils.AppUtils;"
+    out.println ""
+
 //  out.println "import lombok.Getter;"
 //  out.println "import lombok.Setter;"
 //  out.println "import lombok.ToString;"
@@ -85,8 +92,7 @@ def generate(out, className, fields, table) {
     out.println "import lombok.Getter;"
     out.println "import com.fasterxml.jackson.annotation.JsonAlias;"
     out.println "import com.fasterxml.jackson.annotation.JsonProperty;"
-    out.println "import io.swagger.annotations.ApiModel;"
-    out.println "import io.swagger.annotations.ApiModelProperty;"
+
     out.println "import lombok.AllArgsConstructor;"
     out.println "import com.fasterxml.jackson.annotation.JsonIgnore;"
     out.println "import org.hibernate.annotations.NotFound;"
@@ -99,7 +105,12 @@ def generate(out, className, fields, table) {
         out.println "import com.jeiat.itapi.base.CommonEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
+    out.println ""
+    out.println "import javax.persistence.*;"
+    out.println "import javax.validation.constraints.NotEmpty;"
+    out.println "import javax.validation.constraints.NotNull;"
     out.println "import java.util.List;"
+    out.println ""
     def baseName = className + "Base"
     def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def file = new File(dir + "\\base", baseName + ".java")
@@ -108,20 +119,28 @@ def generate(out, className, fields, table) {
         if (!file.exists()) {
             PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
             printWriter.withPrintWriter { out2 ->
-                        out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
-                            "\n" +
-                            "import com.jeiat.itapi.base.CommonEntity;\n" +
-                            "import lombok.Data;\n" +
-                            "import lombok.EqualsAndHashCode;\n" +
-                            "\n" +
-                            "\n" +
-                            "@Data\n" +
-                            "@EqualsAndHashCode(callSuper = false)\n" +
-                            "public abstract class  $baseName extends CommonEntity  {\n" +
-                            "\n" +
-                            "\n" +
-                            "\n" +
-                            "}\n"
+                out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
+                        "\n" +
+                        "import com.jeiat.itapi.base.CommonEntity;\n" +
+                        "import lombok.Data;\n" +
+                        "import lombok.EqualsAndHashCode;\n" +
+                        "\n" +
+                        "\n" +
+                        "@Data\n" +
+                        "@EqualsAndHashCode(callSuper = false)\n" +
+                        "public abstract class  $baseName extends CommonEntity  {\n" +
+                        "\n" +
+                        "\n" +
+                        "\n" +
+                        "\n" +
+                        "\n" +
+                        "\n" +
+                        "    public static class Joiner {\n" +
+                        "        public static void joinBase(List<${className}> ignored) {\n" +
+                        "\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n"
 
             }
         }
@@ -141,23 +160,25 @@ def generate(out, className, fields, table) {
             types.add(it.type)
         }
 
-        if(isNotEmpty(it.rela)){
+        if (isNotEmpty(it.rela)) {
             def relaPackageName = getRelaPackageName(it.rela, packageName, moduleName, getRelaModeName(it.rela, moduleName, it.colName))
-            if(isNotEmpty(relaPackageName)){
+            if (isNotEmpty(relaPackageName)) {
                 out.println "import $relaPackageName;"
             }
         }
-        if(isNotEmpty(it.join)){
+        if (isNotEmpty(it.join)) {
             String relaPackageName = it.join.split(/_/)[0]
-            relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, javaName(it.join,true))
-            if(isNotEmpty(relaPackageName)){
+            relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, javaName(it.join, true))
+            if (isNotEmpty(relaPackageName)) {
                 out.println "import $relaPackageName;"
             }
         }
     }
 
     if (types.contains("Date")) {
+        out.println ""
         out.println "import java.util.Date;"
+        out.println ""
         out.println "import com.fasterxml.jackson.annotation.JsonFormat;"
         if (isExport) {
             out.println "import com.alibaba.excel.annotation.format.DateTimeFormat;"
@@ -176,11 +197,15 @@ def generate(out, className, fields, table) {
     if (types.contains("InputStream")) {
         out.println "import java.io.InputStream;"
     }
+
     out.println ""
-//  out.println "/**\n" +
-//          " * @Description  \n" +
-//          " * @Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-//          " */"
+    out.println "/**\n" +
+            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + "\n" +
+            " * !!THIS FILE WILL BE REWRITE,SO IT'S READONLY,DO NOT CHANGE IT!!\n" +
+            " * if you want to change it\n" +
+            " * please extend it in it's baseclass ${className}Base\n" +
+            " */"
+
     out.println ""
 //  out.println "@Setter"
 //  out.println "@Getter"
@@ -189,8 +214,8 @@ def generate(out, className, fields, table) {
 
     out.println "@Data"
     out.println "@Entity"
-    out.println "@Table(name =\"" + tableName + "\")"
-    out.println "@ApiModel(value =\"${getTableAnno(cleanComment)}模型\")"
+    out.println "@Table(name = \"" + tableName + "\")"
+    out.println "@ApiModel(value = \"${getTableAnno(cleanComment)}模型\")"
     def extendsStr = "implements Serializable"
     if (hasBase) {
         out.println "@EqualsAndHashCode(callSuper = false)"
@@ -256,10 +281,10 @@ def generate(out, className, fields, table) {
             // 输出成员变量
             if (isNotEmpty(it.comment)) {
                 def required = ""
-                if(!it.isId && it.notNull) required = ", required = true"
+                if (!it.isId && it.notNull) required = ", required = true"
                 def noModify = ""
-                if(!it.isId && (isIgnore || isNja)) noModify = " [只读]"
-                out.println "    @ApiModelProperty(value=\"${it.comment.toString()}${noModify}\"${required})"
+                if (!it.isId && (isIgnore || isNja)) noModify = " [只读]"
+                out.println "    @ApiModelProperty(value = \"${it.comment.toString()}${noModify}\"${required})"
                 if (tableIsExport(comment)) {
                     out.println "    @ExcelProperty(\"${it.comment.toString()}\")"
                     if ((it.type == "Date")) {
@@ -270,7 +295,7 @@ def generate(out, className, fields, table) {
             if (!it.isId) {
                 if (isIgnore)
                     out.println "    @JsonIgnore"
-                else if(!isNja)
+                else if (!isNja)
                     out.println "    @JsonAlias"
             }
             if (it.type == "Double") {
@@ -286,13 +311,13 @@ def generate(out, className, fields, table) {
             if (it.type == "String") {
                 if (it.notNull) out.println "    @NotEmpty"
                 if (it.length != null && it.length > 0) out.println "    @ByteMaxLength(max = ${it.length})"
-            }else{
+            } else {
                 if (it.notNull && !it.isId) out.println "    @NotNull"
             }
 
             out.println "    private ${it.type} ${it.name};"
 
-            if(it.rela != null){
+            if (it.rela != null) {
                 out.println ""
                 out.println "    @JsonIgnore"
                 out.println "    @OneToOne"
@@ -305,87 +330,104 @@ def generate(out, className, fields, table) {
                 out.println ""
                 String dictColName = it.colName
                 dictColName = trimId(dictColName)
-                javaDictName = javaName(dictColName,true)
+                javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
-                String javaDictColName = javaName(dictColName,true)
-                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                String javaDictColName = javaName(dictColName, true)
+                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
-                out.println "    private String get${javaDictColName}(){\n" +
-                        "        return AppUtils.ofNullable(${getRelaVarName(typeName)},${typeName}::getName);\n" +
+                out.println "    private String get${javaDictColName}() {\n" +
+                        "        return AppUtils.ofNullable(${getRelaVarName(typeName)}, ${typeName}::getName);\n" +
                         "    }"
             }
 
-            if(isNotEmpty(it.dict)){
+            if (isNotEmpty(it.dict)) {
                 index = index + 1
                 out.println ""
                 out.println "    @Transient"
                 String dictColName = it.colName
                 dictColName = trimId(dictColName)
-                it.javaDictName = javaName(dictColName,true)
+                it.javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
-                String javaDictColName = javaName(dictColName,false)
-                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                String javaDictColName = javaName(dictColName, false)
+                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
                 out.println "    private String $javaDictColName;"
                 it.dictColName = dictColName
-                
+
             }
 
-            if(isNotEmpty(it.join)){
+            if (isNotEmpty(it.join)) {
                 index = index + 1
                 out.println ""
                 out.println "    @Transient"
                 out.println "    @JsonIgnore"
-                out.println "    private ${javaName(it.join,true)} ${javaName(it.join,false)};"
+                out.println "    private ${javaName(it.join, true)} ${javaName(it.join, false)};"
                 out.println ""
                 String dictColName = it.colName
                 dictColName = trimId(dictColName)
-                javaDictName = javaName(dictColName,true)
+                javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
-                String javaDictColName = javaName(dictColName,true)
-                out.println "    " +  "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                String javaDictColName = javaName(dictColName, true)
+                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
-                out.println "    private String get${javaDictColName}(){\n" +
-                        "        return AppUtils.ofNullable(${javaName(it.join,false)},${javaName(it.join,true)}::getName);\n" +
+                out.println "    private String get${javaDictColName}() {\n" +
+                        "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                         "    }"
             }
         }
     }
     out.println ""
-    out.println "    //dict"
-    out.println "    @Getter\n" +
-            "    @AllArgsConstructor\n" +
-            "    public enum DictTypeEnum {"
+    String baseJoiner = hasBase ? "extends ${className}Base.Joiner " : ""
+    out.println "    public static class Joiner ${baseJoiner}{\n" +
+                "        public static void joinAll(List<${className}> list) {"
+    if (hasBase) out.println "            joinBase(list);"
+    out.println "            joinDicts(list);"
     fields.each() {
-        if (isNotEmpty(it.dict)) {
-            out.print         "\n" +
-                    "        //${it.comment}\n" +
-                    "        ${it.javaDictName}(\"${it.dict}\"),"
+        if (isNotEmpty(it.join)) {
+            String colName = it.colName
+            colName = javaClassName(trimId(colName), true)
+            out.println "            join${colName}(list);"
         }
     }
-    out.print         ";\n" +
-            "        private final String type;\n" +
+    out.println "        }"
+    out.println ""
+    out.println "        //dict"
+    out.println "        @Getter\n" +
+            "        @AllArgsConstructor\n" +
+            "        public enum DictEnum {"
+    boolean first = true
+    fields.each() {
+        if (isNotEmpty(it.dict)) {
+            String firstLine = first ? "" : ","
+            first = false
+            out.print "${firstLine}\n" +
+                    "            //${it.comment}\n" +
+                    "            ${it.javaDictName}(\"${it.dict}\")"
+        }
+    }
+    out.print ";\n\n" +
+            "            private final String type;\n" +
             "\n" +
-            "        public static void join(List<${className}> list) {\n" +
-            "            String[] types = new String[]{"
+            "            public static void join(List<${className}> list) {\n" +
+            "                String[] types = new String[]{"
     fields.each() {
         if (isNotEmpty(it.dict)) {
-            out.print         "\n" +
-                    "                    ${it.javaDictName}.getType(),"
+            out.print "\n" +
+                    "                        ${it.javaDictName}.getType(),"
         }
     }
-    out.print         "\n" +
-            "            };\n" +
-            "            new DictUtil.DictJoiner<>(list, types)"
+    out.print "\n" +
+            "                };\n" +
+            "                new DictUtil.DictJoiner<>(list, types)"
     fields.each() {
         if (isNotEmpty(it.dict)) {
-            out.print         "\n" +
-                    "                    .joinValue(${className}::get${javaName(it.name,true)}, ${className}::set${javaName(it.dictColName,true)})"
+            out.print "\n" +
+                    "                        .joinValue(${className}::get${javaName(it.name, true)}, ${className}::set${javaName(it.dictColName, true)})"
         }
     }
-    out.print         ";\n" +
-    "        }\n" +
-            "    }"
+    out.println ";\n" +
+            "            }\n" +
+            "        }"
     // 输出get/set方法
 //    fields.each() {
 //        out.println ""
@@ -399,6 +441,22 @@ def generate(out, className, fields, table) {
 //        out.println "\t}"
 //    }
     out.println ""
+    out.println "        public static void joinDicts(List<${className}> list) {\n" +
+            "            DictEnum.join(list);\n" +
+            "        }"
+    out.println ""
+    fields.each() {
+        if (isNotEmpty(it.join)) {
+            String colName = it.colName
+            colName = javaClassName(trimId(colName), true)
+            out.println "        //关联表: ${it.join}"
+            out.println "        public static void join${colName}(List<${className}> list) {\n" +
+                    "            SpringContextHolder.getBean(EntityJoiner.class)\n" +
+                    "                    .joinBean(list, ${className}::get${javaClassName(it.colName, true)}, ${className}::get${javaClassName(it.join, true)});\n" +
+                    "        }\n" +
+                    "    }"
+        }
+    }
     out.println "}"
 }
 
@@ -412,20 +470,20 @@ def calcFields(table) {
         def colName = col.getName()
         def comment = col.getComment()
         def rela = getRela(comment)
-        comment = removeRela(comment,rela)
+        comment = removeRela(comment, rela)
         def isId = primaryKey != null && DasUtil.containsName(colName, primaryKey.getColumnsRef())
         def comm = [
-                colName : col.getName(),
-                name    : javaName(col.getName(), false),
-                type    : typeStr,
+                colName: col.getName(),
+                name   : javaName(col.getName(), false),
+                type   : typeStr,
                 comment: comment,
-                index   : index,
-                isId    : isId,
-                notNull : col.isNotNull(),
-                length  : col.getDataType().getLength(),
-                rela    : rela,
-                dict    : getDict(comment),
-                join    : getJoin(comment)
+                index  : index,
+                isId   : isId,
+                notNull: col.isNotNull(),
+                length : col.getDataType().getLength(),
+                rela   : rela,
+                dict   : getDict(comment),
+                join   : getJoin(comment)
         ]
 //        if ("id".equals(Case.LOWER.apply(col.getName())))
 //            comm.annos += ["@Id"]
@@ -475,7 +533,7 @@ static String changeStyle(String str, boolean toCamel) {
 
 static String genSerialID() {
     //return "\tprivate static final long serialVersionUID =  " + Math.abs(new Random().nextLong()) + "L;"
-    return "    private static final long serialVersionUID =  1L;"
+    return "    private static final long serialVersionUID = 1L;"
 }
 
 static boolean contains(String element) {
@@ -509,47 +567,51 @@ static boolean tableHaveBase(String comment) {
 static boolean fieldIsNoChange(String comment) {
     return comment.contains("(NJA)")
 }
-static void checkTableCommonent(String comment,String table){
-    if(comment == null )throw new Exception("表${table}注释不能为空")
+
+static void checkTableCommonent(String comment, String table) {
+    if (comment == null) throw new Exception("表${table}注释不能为空")
 }
-static void checkFieldCommonent(String comment,String field,String table){
-    if(comment == null )throw new Exception("表${table}字段${field}注释不能为空")
+
+static void checkFieldCommonent(String comment, String field, String table) {
+    if (comment == null) throw new Exception("表${table}字段${field}注释不能为空")
 }
-static String getProjectName(String projectStr){
+
+static String getProjectName(String projectStr) {
     def s = "componentStore="
     def e = ")"
     def si = projectStr.indexOf(s)
-    def ei = projectStr.indexOf(e,si + s.length())
-    def project = projectStr.substring(si + s.length(),ei)
-    if(project.endsWith(".ipr")){
+    def ei = projectStr.indexOf(e, si + s.length())
+    def project = projectStr.substring(si + s.length(), ei)
+    if (project.endsWith(".ipr")) {
         project = new File(project).getParent()
     }
     return project
 }
 
-static String getTableAnno(String anno){
-    for (int i= 0;i<anno.length();i++){
-        if(!inChar(anno.charAt(i))){
+static String getTableAnno(String anno) {
+    for (int i = 0; i < anno.length(); i++) {
+        if (!inChar(anno.charAt(i))) {
             return anno.substring(i)
         }
     }
     return anno
 }
-static boolean  inChar(char b){
-    int s = (short)b
+
+static boolean inChar(char b) {
+    int s = (short) b
 
     return (s >= 48 && s <= 57) || s == 46
 }
 
-static String getDict(String common){
+static String getDict(String common) {
     def pattern = ~/\((字典:\w+)?\)/
     def matcher = common =~ pattern
-    if(matcher.find()){
-        if(matcher.groupCount()>0){
+    if (matcher.find()) {
+        if (matcher.groupCount() > 0) {
             def str = matcher.group(0)
-            if(str.contains(":")){
-                return str.replace("(字典:","").replace(")","")
-            }else{
+            if (str.contains(":")) {
+                return str.replace("(字典:", "").replace(")", "")
+            } else {
                 return ""
             }
         }
@@ -557,57 +619,60 @@ static String getDict(String common){
     return null
 }
 
-static String getRela(String common){
+static String getRela(String common) {
     def pattern = ~/\(R(:\w+)?\)/
     def matcher = common =~ pattern
-    if(matcher.find()){
-        if(matcher.groupCount()>0){
+    if (matcher.find()) {
+        if (matcher.groupCount() > 0) {
             def str = matcher.group(0)
-            if(str.contains(":")){
-                return str.replace("(R:","").replace(")","")
-            }else{
+            if (str.contains(":")) {
+                return str.replace("(R:", "").replace(")", "")
+            } else {
                 return ""
             }
         }
     }
     return null
 }
-static String removeRela(String common,String rela){
-    if(rela == null)return common
-    if(rela.length() == 0)return common.replace("(R)","")
-    return common.replace("(R:" + rela + ")","")
+
+static String removeRela(String common, String rela) {
+    if (rela == null) return common
+    if (rela.length() == 0) return common.replace("(R)", "")
+    return common.replace("(R:" + rela + ")", "")
 }
-static String getRelaModeName(String rela,String thisMod,String colName){
+
+static String getRelaModeName(String rela, String thisMod, String colName) {
     String name = colName.replace("_id", "")
-    return javaName(( rela.length() == 0 ? thisMod : rela ) + javaName(name,true),true)
+    return javaName((rela.length() == 0 ? thisMod : rela) + javaName(name, true), true)
 }
-static String getRelaVarName(String name){
-    return javaName(name,false)
+
+static String getRelaVarName(String name) {
+    return javaName(name, false)
 }
-static String getRelaPackageName(String rela,String thisPackageName,String thisMod, String entityTypeName){
-    if(isNotEmpty(rela)){
-        return thisPackageName.replace(".$thisMod.",".$rela.") + "." + entityTypeName
+
+static String getRelaPackageName(String rela, String thisPackageName, String thisMod, String entityTypeName) {
+    if (isNotEmpty(rela)) {
+        return thisPackageName.replace(".$thisMod.", ".$rela.") + "." + entityTypeName
     }
     return null
 }
 
-static String trimId(String name){
-    if(name.endsWith("_id"))
-    {
-        return name.substring(0,name.length()-3)
+static String trimId(String name) {
+    if (name.endsWith("_id")) {
+        return name.substring(0, name.length() - 3)
     }
     return name
 }
 
-static String getJoin(String common){
+static String getJoin(String common) {
     def pattern = ~/\((关联:\w+)?\)/
     def matcher = common =~ pattern
-    if(matcher.find()){
-        if(matcher.groupCount()>0){
+    if (matcher.find()) {
+        if (matcher.groupCount() > 0) {
             def str = matcher.group(0)
-            if(str.contains(":")){
-                return str.replace("(关联:","").replace(")","")
-            }else{
+            if (str.contains(":")) {
+                return str.replace("(关联:", "").replace(")", "")
+            } else {
                 return ""
             }
         }

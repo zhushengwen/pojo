@@ -110,6 +110,7 @@ def generate(out, className, table) {
     }
     if(tableIsMove(comment)){
         out.println "import com.jeiat.itapi.dto.MoveRequest;"
+        out.println ""
     }
     out.println "import javax.transaction.Transactional;"
     out.println "import javax.validation.Valid;"
@@ -117,9 +118,9 @@ def generate(out, className, table) {
 
 
     out.println ""
-    out.println "/**\n" +
-            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-            " */"
+//    out.println "/**\n" +
+//            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
+//            " */"
     out.println ""
     out.println "@Api(tags = \"${modelAnno}接口\")\n" +
             "@RestController\n" +
@@ -189,12 +190,12 @@ def generate(out, className, table) {
     out.println "    })\n" +
             "    public Result<List<${className}>> ${method}(@And({"
     printList(out,specs)
-    out.println "    }) Specification<${className}> spec,@ApiIgnore " + (count == 6 ? "@SortDefault(sort = {\"${rankField}\"}) " : "") + (tableIsNoPage(comment) ? "Sort sort" : "Pageable pageable") + ") {"
+    out.println "    }) Specification<${className}> spec, @ApiIgnore " + (count == 6 ? "@SortDefault(sort = {\"${rankField}\"}) " : "") + (tableIsNoPage(comment) ? "Sort sort" : "Pageable pageable") + ") {"
     if (tableIsNoPage(comment)) {
-        out.println "        List<${className}> ${javaName}List = ${javaName}Service.get${className}List(spec,sort);"
+        out.println "        List<${className}> ${javaName}List = ${javaName}Service.get${className}List(spec, sort);"
         out.println "        return Result.ok(${javaName}List);"
     } else {
-        out.println "        Page<${className}> ${javaName}Page = ${javaName}Service.get${className}Page(spec,pageable);"
+        out.println "        Page<${className}> ${javaName}Page = ${javaName}Service.get${className}Page(spec, pageable);"
         out.println "        return Result.ok(${javaName}Page.getContent()).setTotal(${javaName}Page.getTotalElements());"
     }
     out.println "    }\n"
@@ -210,8 +211,8 @@ def generate(out, className, table) {
         out.println "    })\n" +
                 "    public Result<List<${className}>> list(@And({"
         printList(out,specs)
-        out.println "    }) Specification<${className}> spec,@ApiIgnore " + (count == 6 ? "@SortDefault(sort = {\"${rankField}\"}) " : "") + "Sort sort) {"
-        out.println "        List<${className}> ${javaName}List = ${javaName}Service.get${className}List(spec,sort);"
+        out.println "    }) Specification<${className}> spec, @ApiIgnore " + (count == 6 ? "@SortDefault(sort = {\"${rankField}\"}) " : "") + "Sort sort) {"
+        out.println "        List<${className}> ${javaName}List = ${javaName}Service.get${className}List(spec, sort);"
         out.println "        return Result.ok(${javaName}List);"
         out.println "    }\n"
     }
@@ -267,7 +268,7 @@ def generate(out, className, table) {
                 "    @Log(\"移动${anno}\")\n" +
                 "    @PreAuthorize(\"@el.check(0)\")\n" +
                 "    public Result<Integer> move(@PathVariable(\"id\") ${className} ${javaName}, @Valid @RequestBody MoveRequest moveRequest) {\n" +
-                "        ${javaName}Service.move${className}(${javaName},moveRequest);\n" +
+                "        ${javaName}Service.move${className}(${javaName}, moveRequest);\n" +
                 "        return Result.ok();\n" +
                 "    }\n" 
     }

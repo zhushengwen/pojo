@@ -71,9 +71,9 @@ def generate(out, className, table) {
     out.println "import $modelClassName;"
 
     out.println ""
-    out.println "/**\n" +
-            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
-            " */"
+//    out.println "/**\n" +
+//            " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + " \n" +
+//            " */"
     out.println ""
     out.println "@Repository"
     if(count == 6){
