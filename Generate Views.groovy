@@ -259,7 +259,7 @@ def generate(out, className, table) {
             "    public Result<Integer> delete(@PathVariable(\"id\") Long id) {\n" +
             "        ${javaName}Service.delete${className}(id);\n" +
             "        return Result.ok();\n" +
-            "    }\n"
+            "    }"
 
     if(tableIsMove(comment)){
         out.println   "\n" +
@@ -270,7 +270,7 @@ def generate(out, className, table) {
                 "    public Result<Integer> move(@PathVariable(\"id\") ${className} ${javaName}, @Valid @RequestBody MoveRequest moveRequest) {\n" +
                 "        ${javaName}Service.move${className}(${javaName}, moveRequest);\n" +
                 "        return Result.ok();\n" +
-                "    }\n" 
+                "    }"
     }
     out.println "}"
 

@@ -379,7 +379,7 @@ def generate(out, className, fields, table) {
     out.println ""
     String baseJoiner = hasBase ? "extends ${className}Base.Joiner " : ""
     out.println "    public static class Joiner ${baseJoiner}{\n" +
-                "        public static void joinAll(List<${className}> list) {"
+            "        public static void joinAll(List<${className}> list) {"
     if (hasBase) out.println "            joinBase(list);"
     out.println "            joinDicts(list);"
     fields.each() {
@@ -405,8 +405,8 @@ def generate(out, className, fields, table) {
                     "            ${it.javaDictName}(\"${it.dict}\")"
         }
     }
-    out.print ";\n\n" +
-            "            private final String type;\n" +
+    out.print ";\n\n"
+    out.print "            private final String type;\n" +
             "\n" +
             "            public static void join(List<${className}> list) {\n" +
             "                String[] types = new String[]{"
@@ -453,10 +453,10 @@ def generate(out, className, fields, table) {
             out.println "        public static void join${colName}(List<${className}> list) {\n" +
                     "            SpringContextHolder.getBean(EntityJoiner.class)\n" +
                     "                    .joinBean(list, ${className}::get${javaClassName(it.colName, true)}, ${className}::get${javaClassName(it.join, true)});\n" +
-                    "        }\n" +
-                    "    }"
+                    "        }\n"
         }
     }
+    out.println "    }"
     out.println "}"
 }
 
