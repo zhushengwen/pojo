@@ -133,13 +133,14 @@ def generate(out, className, table) {
     def params = []
     def paramsPage = []
     def specs = []
-    params.add("            @ApiImplicitParam(name = \"ids\", value = \"编号\", dataType = \"integer[]\"),")
-    specs.add("            @Spec(path = \"id\", params = \"ids\", paramSeparator = ',', spec = In.class),")
+    params.add("            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer[]\"),")
+    specs.add("            @Spec(path = \"id\", params = \"id\", paramSeparator = ',', spec = In.class),")
     fields.each() {
         if (isNotEmpty(it.commoent)) {
             def isEqal = it.commoent.toString().contains("(E)")
             def isDefault = it.commoent.toString().contains("(DE)")
             def isBetween = it.commoent.toString().contains("(BE)")
+            def isIn = it.commoent.toString().contains("(IN)")
             isEqal = isEqal || isDefault
             def isLike = it.commoent.toString().contains("(L)")
             def colComment = getCleanFieldComment(it.commoent)
@@ -162,6 +163,10 @@ def generate(out, className, table) {
             if (isLike) {
                 params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment}\"),")
                 specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", spec = Like.class),")
+            }
+            if (isIn) {
+                params.add("            @ApiImplicitParam(name = \"${it.colName}\", value = \"${colComment} [多选:逗号分隔]\"),")
+                specs.add("            @Spec(path = \"${it.name}\", params = \"${it.colName}\", paramSeparator = ',', spec = In.class),")
             }
         }
 
@@ -348,6 +353,7 @@ static String getCleanFieldComment(String comment) {
             .replace("(BE)","")
             .replace("(NJA)","")
             .replace("(L)","")
+            .replace("(IN)","")
 }
 static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")

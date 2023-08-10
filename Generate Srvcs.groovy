@@ -104,11 +104,11 @@ def generate(out, className, table) {
     out.println ""
 
     out.println "    void delete${className}(Long id);"
-    out.println ""
+
 
     if(tableIsMove(tableComment)) {
-        out.println "    void move${className}(${className} $javaName, MoveRequest moveRequest);"
         out.println ""
+        out.println "    void move${className}(${className} $javaName, MoveRequest moveRequest);"
     }
 
     out.println "}"
@@ -201,14 +201,14 @@ def generateImpl(out, className, table) {
     }else{
         out.println            "        ${javaName}Repository.deleteById(id);"
     }
-    out.println "    }\n"
+    out.println "    }"
 
     if(tableIsMove(tableComment)){
         out.println ""
         out.println "    @Override\n" +
                 "    public void move${className}(${className} ${javaName}, MoveRequest moveRequest) {\n" +
                 "        ${javaName}Repository.moveTo(${javaName}, moveRequest.getMove());\n" +
-                "    }\n"
+                "    }"
     }
 
 

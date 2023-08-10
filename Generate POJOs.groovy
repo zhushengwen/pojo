@@ -239,37 +239,24 @@ def generate(out, className, fields, table) {
             out.println ""
             def isIgnore = false
             def isNja = false
-            if (isNotEmpty(it.comment)) {
-                it.comment = it.comment.replace("(L)", "")
-                it.comment = it.comment.replace("(E)", "")
-                it.comment = it.comment.replace("(DE)", "")
-                it.comment = it.comment.replace("(BE)", "")
-            }
-            if (isNotEmpty(it.comment)) {
+              if (isNotEmpty(it.comment)) {
 
-                if (it.comment.toString().contains("(I)")) {
+                if (it.comment.contains("(I)")) {
                     isIgnore = true
-                    it.comment = it.comment.replace("(I)", "")
                 }
-
-
-                if (it.comment.toString().contains("(NJA)")) {
+                if (it.comment.contains("(NJA)")) {
                     isNja = true
-                    it.comment = it.comment.replace("(NJA)", "")
                 }
             }
 
             // 输出注释
-            if (isNotEmpty(it.comment)) {
-                if (it.comment.toString().contains("(T)")) {
-                    out.println "    @Transient"
-                    it.comment = it.comment.replace("(T)", "")
-                }
-                out.println "    /**"
-                out.println "     * ${it.comment.toString()}"
-                out.println "     */"
+            if (it.comment.toString().contains("(T)")) {
+                out.println "    @Transient"
             }
-
+            it.comment = getCleanFieldComment(it.comment)
+            out.println "    /**"
+            out.println "     * ${it.comment.toString()}"
+            out.println "     */"
 
             if (it.isId) out.println "    @Id"
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
@@ -284,9 +271,9 @@ def generate(out, className, fields, table) {
                 if (!it.isId && it.notNull) required = ", required = true"
                 def noModify = ""
                 if (!it.isId && (isIgnore || isNja)) noModify = " [只读]"
-                out.println "    @ApiModelProperty(value = \"${it.comment.toString()}${noModify}\"${required})"
+                out.println "    @ApiModelProperty(value = \"${it.comment}${noModify}\"${required})"
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.comment.toString()}\")"
+                    out.println "    @ExcelProperty(\"${it.comment}\")"
                     if ((it.type == "Date")) {
                         out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
                     }
@@ -333,8 +320,12 @@ def generate(out, className, fields, table) {
                 javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, true)
-                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+
+                if (tableIsExport(comment)) {
+                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                }
+                out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
                 out.println "    private String get${javaDictColName}() {\n" +
                         "        return AppUtils.ofNullable(${getRelaVarName(typeName)}, ${typeName}::getName);\n" +
                         "    }"
@@ -349,8 +340,11 @@ def generate(out, className, fields, table) {
                 it.javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, false)
-                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+                if (tableIsExport(comment)) {
+                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                }
+                out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
                 out.println "    private String $javaDictColName;"
                 it.dictColName = dictColName
 
@@ -368,8 +362,11 @@ def generate(out, className, fields, table) {
                 javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, true)
-                out.println "    " + "@JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment.toString()}名称\")"
+                if (tableIsExport(comment)) {
+                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                }
+                out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
                 out.println "    private String get${javaDictColName}() {\n" +
                         "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                         "    }"
@@ -405,9 +402,8 @@ def generate(out, className, fields, table) {
                     "            ${it.javaDictName}(\"${it.dict}\")"
         }
     }
-    out.print ";\n\n"
+    out.println "            ;"
     out.print "            private final String type;\n" +
-            "\n" +
             "            public static void join(List<${className}> list) {\n" +
             "                String[] types = new String[]{"
     fields.each() {
@@ -547,7 +543,17 @@ static boolean contains6(String element) {
 static String getCleanTableComment(String comment) {
     return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "").replace("(M)", "")
 }
-
+static String getCleanFieldComment(String comment) {
+    return comment.toString()
+            .replace("(DE)","")
+            .replace("(E)","")
+            .replace("(T)","")
+            .replace("(I)","")
+            .replace("(BE)","")
+            .replace("(NJA)","")
+            .replace("(L)","")
+            .replace("(IN)","")
+}
 static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")
 }
