@@ -122,9 +122,11 @@ def generate(out, className, fields, table) {
                 out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
                         "\n" +
                         "import com.jeiat.itapi.base.CommonEntity;\n" +
+                        "import $packageName.$className;\n" +
                         "import lombok.Data;\n" +
                         "import lombok.EqualsAndHashCode;\n" +
                         "\n" +
+                        "import java.util.List;\n" +
                         "\n" +
                         "@Data\n" +
                         "@EqualsAndHashCode(callSuper = false)\n" +
