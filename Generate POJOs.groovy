@@ -75,7 +75,6 @@ def generate(out, className, fields, table) {
     out.println "import com.jeiat.itapi.component.EntityJoiner;"
 
     out.println "import com.jeiat.itapi.utils.AppUtils;"
-    out.println "import com.jeiat.itapi.utils.SpringContextHolder;"
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
 
@@ -449,8 +448,7 @@ def generate(out, className, fields, table) {
             colName = javaClassName(trimId(colName), true)
             out.println "        //关联表: ${it.join}"
             out.println "        public static void join${colName}(List<${className}> list) {\n" +
-                    "            SpringContextHolder.getBean(EntityJoiner.class)\n" +
-                    "                    .joinBean(list, ${className}::get${javaClassName(it.colName, true)}, ${className}::get${javaClassName(it.join, true)});\n" +
+                    "            EntityJoiner.join(list, ${className}::get${javaClassName(it.colName, true)}, ${className}::get${javaClassName(it.join, true)});\n" +
                     "        }\n"
         }
     }
