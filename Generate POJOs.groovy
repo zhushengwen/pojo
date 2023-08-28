@@ -327,7 +327,7 @@ def generate(out, className, fields, table) {
                 }
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment}名称\")"
-                out.println "    private String get${javaDictColName}() {\n" +
+                out.println "    public String get${javaDictColName}() {\n" +
                         "        return AppUtils.ofNullable(${getRelaVarName(typeName)}, ${typeName}::getName);\n" +
                         "    }"
             }
@@ -368,7 +368,7 @@ def generate(out, className, fields, table) {
                 }
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment}名称\")"
-                out.println "    private String get${javaDictColName}() {\n" +
+                out.println "    public String get${javaDictColName}() {\n" +
                         "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                         "    }"
             }
