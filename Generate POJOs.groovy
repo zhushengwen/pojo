@@ -263,8 +263,9 @@ def generate(out, className, fields, table) {
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
 
             out.println "    @Column(name = \"${it.colName}\")"
-            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
             def datePattern = it.comment.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
+            def dpS = it.type == "Date" ? "(格式：$datePattern)" : ""
+            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}${dpS}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.comment)) {
@@ -312,7 +313,7 @@ def generate(out, className, fields, table) {
                 out.println "    @NotFound(action = NotFoundAction.IGNORE)"
                 out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
                 def typeName = getRelaModeName(it.rela, moduleName, it.colName)
-                out.println "    private " + typeName + " " + getRelaVarName(typeName) + ";"
+                out.println "    private " + typeName + " " + getRelaVarName(it.rela, it.colName) + ";"
 
                 index = index + 1
                 out.println ""
@@ -328,7 +329,7 @@ def generate(out, className, fields, table) {
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                 out.println "    @ApiModelProperty(\"${it.comment}名称\")"
                 out.println "    public String get${javaDictColName}() {\n" +
-                        "        return AppUtils.ofNullable(${getRelaVarName(typeName)}, ${typeName}::getName);\n" +
+                        "        return AppUtils.ofNullable(${getRelaVarName(it.rela, it.colName)}, ${typeName}::getName);\n" +
                         "    }"
             }
 
@@ -652,8 +653,9 @@ static String getRelaModeName(String rela, String thisMod, String colName) {
     return javaName((rela.length() == 0 ? thisMod : rela) + javaName(name, true), true)
 }
 
-static String getRelaVarName(String name) {
-    return javaName(name, false)
+static String getRelaVarName(String rela, String colName) {
+    String name = colName.replace("_id", "")
+    return javaName((rela.length() == 0 ? '' : rela) + javaName(name, true), false)
 }
 
 static String getRelaPackageName(String rela, String thisPackageName, String thisMod, String entityTypeName) {
