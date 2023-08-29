@@ -240,6 +240,7 @@ def generate(out, className, fields, table) {
             out.println ""
             def isIgnore = false
             def isNja = false
+            def isDate = it.dbType == "date"
               if (isNotEmpty(it.comment)) {
 
                 if (it.comment.contains("(I)")) {
@@ -263,9 +264,9 @@ def generate(out, className, fields, table) {
             if (it.isId) out.println "    @GeneratedValue(strategy = GenerationType.IDENTITY)"
 
             out.println "    @Column(name = \"${it.colName}\")"
-            def datePattern = it.comment.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
+            def datePattern = isDate || it.comment.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
             def dpS = it.type == "Date" ? "(格式：$datePattern)" : ""
-            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}${dpS}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
+            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.comment)) {
@@ -273,7 +274,7 @@ def generate(out, className, fields, table) {
                 if (!it.isId && it.notNull) required = ", required = true"
                 def noModify = ""
                 if (!it.isId && (isIgnore || isNja)) noModify = " [只读]"
-                out.println "    @ApiModelProperty(value = \"${it.comment}${noModify}\"${required})"
+                out.println "    @ApiModelProperty(value = \"${it.comment}${dpS}${noModify}\"${required})"
                 if (tableIsExport(comment)) {
                     out.println "    @ExcelProperty(\"${it.comment}\")"
                     if ((it.type == "Date")) {
@@ -342,11 +343,12 @@ def generate(out, className, fields, table) {
                 it.javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, false)
+                String cleanDict = clearDict(it.comment, it.dict)
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                    out.println "    @ExcelProperty(\"${cleanDict}名称\")"
                 }
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
+                out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
                 out.println "    private String $javaDictColName;"
                 it.dictColName = dictColName
 
@@ -363,12 +365,13 @@ def generate(out, className, fields, table) {
                 dictColName = trimId(dictColName)
                 javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
+                String cleanDict = clearJoin(it.comment, it.join)
                 String javaDictColName = javaName(dictColName, true)
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                    out.println "    @ExcelProperty(\"${cleanDict}名称\")"
                 }
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
+                out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
                 out.println "    public String get${javaDictColName}() {\n" +
                         "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                         "    }"
@@ -473,6 +476,7 @@ def calcFields(table) {
                 colName: col.getName(),
                 name   : javaName(col.getName(), false),
                 type   : typeStr,
+                dbType : spec,
                 comment: comment,
                 index  : index,
                 isId   : isId,
@@ -686,4 +690,11 @@ static String getJoin(String common) {
         }
     }
     return null
+}
+
+static String clearJoin(String common, String name){
+    return common.replace("(关联:" + name + ")","")
+}
+static String clearDict(String common, String name){
+    return common.replace("(字典:" + name + ")","")
 }
