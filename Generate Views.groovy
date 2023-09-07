@@ -64,7 +64,7 @@ def generate(out, className, table) {
         if (contains(it.colName)) count++
     }
     def rankField = containRank(fields) ? "rank" : "id"
-    def model = table.getName()
+    def model = table.getName().split(/_/)[1..-1].join("_")
     def javaName = javaName(className, false)
     def comment = table.getComment() as String
     def cleanComment =  getCleanTableComment(comment)

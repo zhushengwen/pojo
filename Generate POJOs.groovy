@@ -382,8 +382,8 @@ def generate(out, className, fields, table) {
     String baseJoiner = hasBase ? "extends ${className}Base.Joiner " : ""
     out.println "    public static class Joiner ${baseJoiner}{\n" +
             "        public static void joinAll(List<${className}> list) {"
-    if (hasBase) out.println "            joinBase(list);"
     out.println "            joinDicts(list);"
+    if (hasBase) out.println "            joinBase(list);"
     fields.each() {
         if (isNotEmpty(it.join)) {
             String colName = it.colName
