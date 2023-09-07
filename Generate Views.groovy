@@ -354,6 +354,7 @@ static String getCleanFieldComment(String comment) {
             .replace("(NJA)","")
             .replace("(L)","")
             .replace("(IN)","")
+            .replace("(S)","")
 }
 static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")
