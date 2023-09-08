@@ -3,6 +3,8 @@ import com.intellij.database.model.ObjectKind
 import com.intellij.database.util.Case
 import com.intellij.database.util.DasUtil
 import java.io.*
+import java.nio.file.Paths
+import java.nio.file.Files
 import java.text.SimpleDateFormat
 
 /*
@@ -153,7 +155,6 @@ def generate(out, className, fields, table) {
         out.println "import ${packageName}.base.${className}Base;"
     }
     Set types = new HashSet()
-
     fields.each() {
         if (count != 4 || !contains(it.colName)) {
             types.add(it.type)
@@ -339,15 +340,22 @@ def generate(out, className, fields, table) {
                 javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, true)
-
-                if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                String methodSignature = "public String get${javaDictColName}()"
+                boolean genGetName = true
+                if(hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)){
+                    genGetName = false
                 }
-                out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${it.comment}名称\")"
-                out.println "    public String get${javaDictColName}() {\n" +
-                        "        return AppUtils.ofNullable(${getRelaVarName(it.rela, it.colName)}, ${typeName}::getName);\n" +
-                        "    }"
+                if(genGetName){
+                    if (tableIsExport(comment)) {
+                        out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                    }
+                    out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                    out.println "    @ApiModelProperty(\"${it.comment}名称\")"
+                    out.println "    ${methodSignature} {\n" +
+                            "        return AppUtils.ofNullable(${getRelaVarName(it.rela, it.colName)}, ${typeName}::getName);\n" +
+                            "    }"
+                }
+
             }
 
             if (isNotEmpty(it.dict)) {
@@ -383,14 +391,22 @@ def generate(out, className, fields, table) {
                 dictColName = dictColName + "_name"
                 String cleanDict = clearJoin(it.comment, it.join)
                 String javaDictColName = javaName(dictColName, true)
-                if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${cleanDict}名称\")"
+                String methodSignature = "public String get${javaDictColName}()"
+                boolean genGetName = true
+                if(hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)){
+                    genGetName = false
                 }
-                out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
-                out.println "    public String get${javaDictColName}() {\n" +
-                        "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
-                        "    }"
+                if(genGetName) {
+
+                    if (tableIsExport(comment)) {
+                        out.println "    @ExcelProperty(\"${cleanDict}名称\")"
+                    }
+                    out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
+                    out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
+                    out.println "    public String get${javaDictColName}() {\n" +
+                            "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
+                            "    }"
+                }
             }
         }
     }
