@@ -313,11 +313,11 @@ def generate(out, className, fields, table) {
             String defexp = ""
             if(isNotEmpty(it.defexp)){
                 if(it.type == "Long"){
-                    defexp = " = ${it.defexp}L"
+                    defexp = " = ${it.defexp.replace("'","")}L"
                 }else if(it.type == "String"){
                     defexp = " = ${it.defexp.replace("'","\"")}"
                 }else if(it.type == "Double"){
-                    defexp = " = ${it.defexp}"
+                    defexp = " = ${it.defexp.replace("'","")}"
                 }
             }
 
