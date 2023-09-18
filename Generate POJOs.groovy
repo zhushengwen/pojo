@@ -311,6 +311,8 @@ def generate(out, className, fields, table) {
                 }
             }
             String defexp = ""
+
+            /*
             if(isNotEmpty(it.defexp)){
                 if(it.type == "Long"){
                     defexp = " = ${it.defexp.replace("'","")}L"
@@ -319,8 +321,7 @@ def generate(out, className, fields, table) {
                 }else if(it.type == "Double"){
                     defexp = " = ${it.defexp.replace("'","")}"
                 }
-            }
-
+            }*/
 
             out.println "    private ${it.type} ${it.name}${defexp};"
 
