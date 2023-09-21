@@ -133,8 +133,16 @@ def generate(out, className, table) {
     def params = []
     def paramsPage = []
     def specs = []
-    params.add("            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer[]\"),")
-    specs.add("            @Spec(path = \"id\", params = \"id\", paramSeparator = ',', spec = In.class),")
+    def addId = true
+    fields.each() {
+        if (isNotEmpty(it.commoent)) {
+           if(addId) addId = !it.commoent.contains("(DE)")
+        }
+    }
+    if(addId){
+        params.add("            @ApiImplicitParam(name = \"id\", value = \"编号\", dataType = \"integer[]\"),")
+        specs.add("            @Spec(path = \"id\", params = \"id\", paramSeparator = ',', spec = In.class),")
+    }
     fields.each() {
         if (isNotEmpty(it.commoent)) {
             def isEqal = it.commoent.toString().contains("(E)")

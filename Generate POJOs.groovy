@@ -243,7 +243,7 @@ def generate(out, className, fields, table) {
             def isNja = false
             def isShow = false
             def isDate = it.dbType == "date"
-              if (isNotEmpty(it.comment)) {
+            if (isNotEmpty(it.comment)) {
 
                 if (it.comment.contains("(I)")) {
                     isIgnore = true
@@ -252,7 +252,7 @@ def generate(out, className, fields, table) {
                     isNja = true
                 }
                 if (it.comment.contains("(S)")) {
-                  isShow = true
+                    isShow = true
                 }
             }
 
@@ -271,7 +271,7 @@ def generate(out, className, fields, table) {
             out.println "    @Column(name = \"${it.colName}\")"
             def datePattern = isDate || it.comment.contains("日期") ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
             def dpS = it.type == "Date" ? "(格式：$datePattern)" : ""
-            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId  || isShow ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
+            out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId || isShow ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
             if (isNotEmpty(it.comment)) {
@@ -281,7 +281,8 @@ def generate(out, className, fields, table) {
                 if (!it.isId && (isIgnore || isNja || isShow)) noModify = " [只读]"
                 out.println "    @ApiModelProperty(value = \"${it.comment}${dpS}${noModify}\"${required})"
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${it.comment}\")"
+                    String excelCommon = getClearExport(it)
+                    out.println "    @ExcelProperty(\"${excelCommon}\")"
                     if ((it.type == "Date")) {
                         out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
                     }
@@ -302,7 +303,7 @@ def generate(out, className, fields, table) {
                     out.println "    @JsonSerialize(using = JsonDecimalFormat.class)"
                 }
             }
-            if(!isShow){
+            if (!isShow) {
                 if (it.type == "String") {
                     if (it.notNull) out.println "    @NotEmpty"
                     if (it.length != null && it.length > 0) out.println "    @ByteMaxLength(max = ${it.length})"
@@ -343,10 +344,10 @@ def generate(out, className, fields, table) {
                 String javaDictColName = javaName(dictColName, true)
                 String methodSignature = "public String get${javaDictColName}()"
                 boolean genGetName = true
-                if(hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)){
+                if (hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)) {
                     genGetName = false
                 }
-                if(genGetName){
+                if (genGetName) {
                     if (tableIsExport(comment)) {
                         out.println "    @ExcelProperty(\"${it.comment}名称\")"
                     }
@@ -394,10 +395,10 @@ def generate(out, className, fields, table) {
                 String javaDictColName = javaName(dictColName, true)
                 String methodSignature = "public String get${javaDictColName}()"
                 boolean genGetName = true
-                if(hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)){
+                if (hasBase && Files.readString(Paths.get(file.getAbsolutePath())).contains(methodSignature)) {
                     genGetName = false
                 }
-                if(genGetName) {
+                if (genGetName) {
 
                     if (tableIsExport(comment)) {
                         out.println "    @ExcelProperty(\"${cleanDict}名称\")"
@@ -582,18 +583,20 @@ static boolean contains6(String element) {
 static String getCleanTableComment(String comment) {
     return comment.replace("(NP)", "").replace("(E)", "").replace("(L)", "").replace("(B)", "").replace("(M)", "")
 }
+
 static String getCleanFieldComment(String comment) {
     return comment.toString()
-            .replace("(DE)","")
-            .replace("(E)","")
-            .replace("(T)","")
-            .replace("(I)","")
-            .replace("(BE)","")
-            .replace("(NJA)","")
-            .replace("(L)","")
-            .replace("(IN)","")
-            .replace("(S)","")
+            .replace("(DE)", "")
+            .replace("(E)", "")
+            .replace("(T)", "")
+            .replace("(I)", "")
+            .replace("(BE)", "")
+            .replace("(NJA)", "")
+            .replace("(L)", "")
+            .replace("(IN)", "")
+            .replace("(S)", "")
 }
+
 static boolean tableIsNoPage(String comment) {
     return comment.contains("(NP)")
 }
@@ -727,9 +730,21 @@ static String getJoin(String common) {
     return null
 }
 
-static String clearJoin(String common, String name){
-    return common.replace("(关联:" + name + ")","")
+static String clearJoin(String common, String name) {
+    return common.replace("(关联:" + name + ")", "")
 }
-static String clearDict(String common, String name){
-    return common.replace("(字典:" + name + ")","")
+
+static String clearDict(String common, String name) {
+    return common.replace("(字典:" + name + ")", "")
+}
+
+static String getClearExport(it) {
+    String clean = it.comment
+    if (isNotEmpty(it.rela))
+        clean = removeRela(clean, it.rela)
+    if (isNotEmpty(it.join))
+        clean = clearJoin(clean, it.join)
+    if (isNotEmpty(it.dict))
+        clean = clearDict(clean, it.dict)
+    return clean
 }
