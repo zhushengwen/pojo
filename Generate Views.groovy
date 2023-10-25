@@ -59,6 +59,10 @@ def getPackageName(dir) {
 
 def generate(out, className, table) {
     def fields = calcFields(table)
+    checkTableCommonent(table.getComment(), table.getName())
+    fields.each() {
+        checkFieldCommonent(it.comment, it.colName, tableName)
+    }
     def count = 0
     fields.each() {
         if (contains(it.colName)) count++
@@ -81,7 +85,7 @@ def generate(out, className, table) {
             "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
             "import com.jeiat.itapi." + moduleSub + "model.${className};\n" +
             "import com.jeiat.itapi." + moduleSub + "service.${className}Service;\n" +
-            "import com.jeiat.itapi.utils.AppUtils;\n" +
+            (count>=4?"import com.jeiat.itapi.utils.AppUtils;\n":"")         +
             "import io.swagger.annotations.Api;\n" +
             "import io.swagger.annotations.ApiImplicitParam;\n" +
             "import io.swagger.annotations.ApiImplicitParams;\n" +
@@ -261,7 +265,7 @@ def generate(out, className, table) {
             "    @PreAuthorize(\"@el.check(0)\")\n" +
             "    @Transactional\n" +
             "    public Result<${className}> update(@PathVariable(\"id\") ${className} ${javaName}, @RequestBody ObjectNode jsonNode) {\n" +
-            "        AppUtils.accept(${javaName}, jsonNode);\n" +
+            (count>=4?"        ${javaName}.accept(jsonNode);\n":"        AppUtils.accept(${javaName}, jsonNode);\n")  +
             "        return Result.ok(${javaName}Service.update${className}(${javaName}));\n" +
             "    }\n" +
             "\n" +
@@ -433,4 +437,12 @@ static String removeRela(String common,String rela){
     if(rela == null)return common
     if(rela.length() == 0)return common.replace("(R)","")
     return common.replace("(R:" + rela + ")","")
+}
+
+static void checkTableCommonent(String comment, String table) {
+    if (comment == null) throw new Exception("表${table}注释不能为空")
+}
+
+static void checkFieldCommonent(String comment, String field, String table) {
+    if (comment == null) throw new Exception("表${table}字段${field}注释不能为空")
 }
