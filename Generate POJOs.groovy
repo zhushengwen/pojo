@@ -72,11 +72,11 @@ def generate(out, className, fields, table) {
     out.println "package $packageName;"
     out.println ""
 
-    out.println "import com.jeiat.itapi.annotation.ByteMaxLength;"
-    out.println "import com.jeiat.itapi.common.DictUtil;"
-    out.println "import com.jeiat.itapi.component.EntityJoiner;"
+    out.println "import com.jeiat.itapi.common.annotation.ByteMaxLength;"
+    out.println "import com.jeiat.itapi.common.util.DictUtil;"
+    out.println "import com.jeiat.itapi.common.component.EntityJoiner;"
 
-    out.println "import com.jeiat.itapi.utils.AppUtils;"
+    out.println "import com.jeiat.itapi.common.utils.AppUtils;"
     out.println "import io.swagger.annotations.ApiModel;"
     out.println "import io.swagger.annotations.ApiModelProperty;"
 
@@ -99,11 +99,11 @@ def generate(out, className, fields, table) {
     out.println "import org.hibernate.annotations.NotFound;"
     out.println "import org.hibernate.annotations.NotFoundAction;"
     if (count == 4) {
-        out.println "import com.jeiat.itapi.base.BaseEntity;"
+        out.println "import com.jeiat.itapi.common.base.BaseEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
     if (count == 6) {
-        out.println "import com.jeiat.itapi.base.CommonEntity;"
+        out.println "import com.jeiat.itapi.common.base.CommonEntity;"
         out.println "import lombok.EqualsAndHashCode;"
     }
     out.println ""
@@ -122,7 +122,7 @@ def generate(out, className, fields, table) {
             printWriter.withPrintWriter { out2 ->
                 out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
                         "\n" +
-                        "import com.jeiat.itapi.base.CommonEntity;\n" +
+                        "import com.jeiat.itapi.common.base.CommonEntity;\n" +
                         "import $packageName.$className;\n" +
                         "import lombok.Data;\n" +
                         "import lombok.EqualsAndHashCode;\n" +
@@ -192,9 +192,9 @@ def generate(out, className, fields, table) {
     if (types.contains("Double")) {
         out.println "import com.fasterxml.jackson.databind.annotation.JsonSerialize;"
         out.println "import com.fasterxml.jackson.databind.annotation.JsonDeserialize;"
-        out.println "import com.jeiat.itapi.utils.JsonDecimalFormat;"
-        out.println "import com.jeiat.itapi.utils.TenThousandDeFormat;\n" +
-                "import com.jeiat.itapi.utils.TenThousandFormat;"
+        out.println "import com.jeiat.itapi.common.utils.JsonDecimalFormat;"
+        out.println "import com.jeiat.itapi.common.utils.TenThousandDeFormat;\n" +
+                "import com.jeiat.itapi.common.utils.TenThousandFormat;"
     }
     if (types.contains("InputStream")) {
         out.println "import java.io.InputStream;"

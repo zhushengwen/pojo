@@ -61,7 +61,7 @@ def generate(out, className, table) {
     def fields = calcFields(table)
     checkTableCommonent(table.getComment(), table.getName())
     fields.each() {
-        checkFieldCommonent(it.comment, it.colName, tableName)
+        checkFieldCommonent(it.comment, it.colName, table.getName())
     }
     def count = 0
     fields.each() {
@@ -82,10 +82,10 @@ def generate(out, className, table) {
     out.println "package $packageName"
     out.println ""
     out.println "import com.jeiat.itapi.common.Result;\n" +
-            "import com.jeiat.itapi.modules.logging.aop.log.Log;\n" +
+            "import com.jeiat.itapi.common.modules.logging.aop.log.Log;\n" +
             "import com.jeiat.itapi." + moduleSub + "model.${className};\n" +
             "import com.jeiat.itapi." + moduleSub + "service.${className}Service;\n" +
-            (count>=4?"import com.jeiat.itapi.utils.AppUtils;\n":"")         +
+            "import com.jeiat.itapi.common.utils.AppUtils;\n" +
             "import io.swagger.annotations.Api;\n" +
             "import io.swagger.annotations.ApiImplicitParam;\n" +
             "import io.swagger.annotations.ApiImplicitParams;\n" +
@@ -110,10 +110,10 @@ def generate(out, className, table) {
 
     if(tableIsExport(comment)){
         out.println "import javax.servlet.http.HttpServletResponse;"
-        out.println "import com.jeiat.itapi.common.ExcelUtil;"
+        out.println "import com.jeiat.itapi.common.util.ExcelUtil;"
     }
     if(tableIsMove(comment)){
-        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+        out.println "import com.jeiat.itapi.common.dto.MoveRequest;"
         out.println ""
     }
     out.println "import javax.transaction.Transactional;"
@@ -139,8 +139,8 @@ def generate(out, className, table) {
     def specs = []
     def addId = true
     fields.each() {
-        if (isNotEmpty(it.commoent)) {
-           if(addId) addId = !it.commoent.contains("(DE)")
+        if (isNotEmpty(it.comment)) {
+           if(addId) addId = !it.comment.contains("(DE)")
         }
     }
     if(addId){
@@ -148,14 +148,14 @@ def generate(out, className, table) {
         specs.add("            @Spec(path = \"id\", params = \"id\", paramSeparator = ',', spec = In.class),")
     }
     fields.each() {
-        if (isNotEmpty(it.commoent)) {
-            def isEqal = it.commoent.toString().contains("(E)")
-            def isDefault = it.commoent.toString().contains("(DE)")
-            def isBetween = it.commoent.toString().contains("(BE)")
-            def isIn = it.commoent.toString().contains("(IN)")
+        if (isNotEmpty(it.comment)) {
+            def isEqal = it.comment.toString().contains("(E)")
+            def isDefault = it.comment.toString().contains("(DE)")
+            def isBetween = it.comment.toString().contains("(BE)")
+            def isIn = it.comment.toString().contains("(IN)")
             isEqal = isEqal || isDefault
-            def isLike = it.commoent.toString().contains("(L)")
-            def colComment = getCleanFieldComment(it.commoent)
+            def isLike = it.comment.toString().contains("(L)")
+            def colComment = getCleanFieldComment(it.comment)
             def defaultRequire = ""
             def defaultValue = ""
             if(isDefault){
@@ -329,7 +329,7 @@ def calcFields(table) {
                 colName : col.getName(),
                 name    : javaName(col.getName(), false),
                 type    : typeStr,
-                commoent: comment,
+                comment: comment,
                 annos   : " @Column(name = \"" + col.getName() + "\")" + "\n" + "    @JsonProperty(value = \"" + col.getName() + "\",index = " + index + (isId ? ",access = JsonProperty.Access.READ_ONLY" : "") + ")",
                 isId    : isId,
         ]

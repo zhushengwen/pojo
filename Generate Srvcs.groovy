@@ -73,7 +73,7 @@ def generate(out, className, table) {
     out.println "package $packageName"
     out.println ""
     if(tableIsMove(tableComment)){
-        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+        out.println "import com.jeiat.itapi.common.dto.MoveRequest;"
     }
     out.println "import $modelClassName;"
     out.println "import org.springframework.data.domain.Page;"
@@ -125,7 +125,7 @@ def generateImpl(out, className, table) {
     out.println "package $packageName"
     out.println ""
     if(tableIsMove(tableComment)){
-        out.println "import com.jeiat.itapi.dto.MoveRequest;"
+        out.println "import com.jeiat.itapi.common.dto.MoveRequest;"
     }
     out.println "import $modelClassName;"
     out.println "import $repoClassName;"

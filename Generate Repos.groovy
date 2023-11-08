@@ -62,7 +62,7 @@ def generate(out, className, table) {
     out.println ""
     out.println "import org.springframework.stereotype.Repository;"
     if(count == 6){
-        out.println "import com.jeiat.itapi.base.ICommonRepository;"
+        out.println "import com.jeiat.itapi.common.base.ICommonRepository;"
     }else{
         out.println "import org.springframework.data.jpa.repository.JpaRepository;"
         out.println "import org.springframework.data.jpa.repository.JpaSpecificationExecutor;"
