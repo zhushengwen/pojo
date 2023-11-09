@@ -2,6 +2,8 @@ import com.intellij.database.model.DasTable
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.util.Case
 import com.intellij.database.util.DasUtil
+import org.apache.poi.xwpf.usermodel.BreakType
+
 import java.io.*
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -67,6 +69,7 @@ def generate(out, className, fields, table) {
     fields.each() {
         if (contains(it.colName)) count++
     }
+    
     def cleanComment = getCleanTableComment(comment)
     def isExport = tableIsExport(comment)
     out.println "package $packageName;"
@@ -98,40 +101,52 @@ def generate(out, className, fields, table) {
     out.println "import com.fasterxml.jackson.annotation.JsonIgnore;"
     out.println "import org.hibernate.annotations.NotFound;"
     out.println "import org.hibernate.annotations.NotFoundAction;"
-    if (count == 4) {
+    
+    if (count == 4 || count == 5) {
         out.println "import com.jeiat.itapi.common.base.BaseEntity;"
-        out.println "import lombok.EqualsAndHashCode;"
     }
     if (count == 6) {
         out.println "import com.jeiat.itapi.common.base.CommonEntity;"
-        out.println "import lombok.EqualsAndHashCode;"
     }
+    
+    out.println "import lombok.EqualsAndHashCode;"
     out.println ""
     out.println "import javax.persistence.*;"
     out.println "import javax.validation.constraints.NotEmpty;"
     out.println "import javax.validation.constraints.NotNull;"
     out.println "import java.util.List;"
     out.println ""
+    
     def baseName = className + "Base"
     def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
     def file = new File(dir + "\\base", baseName + ".java")
+    
+    def extendsStr = "implements Serializable"
 
     if (tableHaveBase(comment)) {
         if (!file.exists()) {
             PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
+            def baseExtendsStr = extendsStr
+            if (count == 4 || count == 5) {
+                baseExtendsStr = "extends BaseEntity "
+            } else if (count == 6) {
+                baseExtendsStr = "extends CommonEntity "
+            }
             printWriter.withPrintWriter { out2 ->
                 out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
                         "\n" +
+                        "import com.jeiat.itapi.common.base.BaseEntity;\n" +
                         "import com.jeiat.itapi.common.base.CommonEntity;\n" +
                         "import $packageName.$className;\n" +
                         "import lombok.Data;\n" +
                         "import lombok.EqualsAndHashCode;\n" +
                         "\n" +
+                        "import java.io.Serializable;\n" +
                         "import java.util.List;\n" +
                         "\n" +
                         "@Data\n" +
                         "@EqualsAndHashCode(callSuper = false)\n" +
-                        "public abstract class  $baseName extends CommonEntity  {\n" +
+                        "public abstract class  $baseName $baseExtendsStr {\n" +
                         "\n" +
                         "\n" +
                         "\n" +
@@ -163,7 +178,7 @@ def generate(out, className, fields, table) {
         }
 
         if (isNotEmpty(it.rela)) {
-            def relaPackageName = getRelaPackageName(it.rela, packageName, moduleName, getRelaModeName(it.rela, moduleName, it.colName))
+            def relaPackageName = getRelaPackageName(getRelaModeName(it.rela, moduleName), packageName, moduleName, getRelaTypeName(it.rela, moduleName, it.colName))
             if (isNotEmpty(relaPackageName)) {
                 out.println "import $relaPackageName;"
             }
@@ -218,11 +233,11 @@ def generate(out, className, fields, table) {
     out.println "@Entity"
     out.println "@Table(name = \"" + tableName + "\")"
     out.println "@ApiModel(value = \"${getTableAnno(cleanComment)}模型\")"
-    def extendsStr = "implements Serializable"
+
     if (hasBase) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends ${className}Base"
-    } else if (count == 4) {
+    } else if (count == 4 || count == 5) {
         out.println "@EqualsAndHashCode(callSuper = false)"
         extendsStr = "extends BaseEntity "
     } else if (count == 6) {
@@ -332,8 +347,8 @@ def generate(out, className, fields, table) {
                 out.println "    @OneToOne"
                 out.println "    @NotFound(action = NotFoundAction.IGNORE)"
                 out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
-                def typeName = getRelaModeName(it.rela, moduleName, it.colName)
-                out.println "    private " + typeName + " " + getRelaVarName(it.rela, it.colName) + ";"
+                def typeName = getRelaTypeName(it.rela, moduleName, it.colName)
+                out.println "    private " + typeName + " " + getRelaVarName(it.colName) + ";"
 
                 index = index + 1
                 out.println ""
@@ -348,11 +363,12 @@ def generate(out, className, fields, table) {
                     genGetName = false
                 }
                 if (genGetName) {
+                    def cleanCommentName = getCleanComment(it)
                     if (tableIsExport(comment)) {
-                        out.println "    @ExcelProperty(\"${it.comment}名称\")"
+                        out.println "    @ExcelProperty(\"${cleanCommentName}\")"
                     }
                     out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                    out.println "    @ApiModelProperty(\"${it.comment}名称\")"
+                    out.println "    @ApiModelProperty(\"${cleanCommentName}\")"
                     out.println "    ${methodSignature} {\n" +
                             "        return AppUtils.ofNullable(${getRelaVarName(it.rela, it.colName)}, ${typeName}::getName);\n" +
                             "    }"
@@ -369,12 +385,12 @@ def generate(out, className, fields, table) {
                 it.javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
                 String javaDictColName = javaName(dictColName, false)
-                String cleanDict = clearDict(it.comment, it.dict)
+                String cleanDict = getCleanComment(it)
                 if (tableIsExport(comment)) {
-                    out.println "    @ExcelProperty(\"${cleanDict}名称\")"
+                    out.println "    @ExcelProperty(\"${cleanDict}\")"
                 }
                 out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
+                out.println "    @ApiModelProperty(\"${cleanDict}\")"
                 out.println "    private String $javaDictColName;"
                 it.dictColName = dictColName
 
@@ -391,7 +407,7 @@ def generate(out, className, fields, table) {
                 dictColName = trimId(dictColName)
                 javaDictName = javaName(dictColName, true)
                 dictColName = dictColName + "_name"
-                String cleanDict = clearJoin(it.comment, it.join)
+                String cleanDict = getCleanComment(it)
                 String javaDictColName = javaName(dictColName, true)
                 String methodSignature = "public String get${javaDictColName}()"
                 boolean genGetName = true
@@ -401,10 +417,10 @@ def generate(out, className, fields, table) {
                 if (genGetName) {
 
                     if (tableIsExport(comment)) {
-                        out.println "    @ExcelProperty(\"${cleanDict}名称\")"
+                        out.println "    @ExcelProperty(\"${cleanDict}\")"
                     }
                     out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
-                    out.println "    @ApiModelProperty(\"${cleanDict}名称\")"
+                    out.println "    @ApiModelProperty(\"${cleanDict}\")"
                     out.println "    public String get${javaDictColName}() {\n" +
                             "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                             "    }"
@@ -568,8 +584,7 @@ static String changeStyle(String str, boolean toCamel) {
 }
 
 static String genSerialID() {
-    //return "\tprivate static final long serialVersionUID =  " + Math.abs(new Random().nextLong()) + "L;"
-    return "    private static final long serialVersionUID = 1L;"
+    return "    private static final long serialVersionUID =  " + Math.abs(new Random().nextLong()) + "L;"
 }
 
 static boolean contains(String element) {
@@ -690,18 +705,28 @@ static String removeRela(String common, String rela) {
     return common.replace("(R:" + rela + ")", "")
 }
 
-static String getRelaModeName(String rela, String thisMod, String colName) {
-    String name = colName.replace("_id", "")
-    return javaName((rela.length() == 0 ? thisMod : rela) + javaName(name, true), true)
+static String getRelaModeName(String rela, String thisMod) {
+    rela = rela.replace("_id","")
+    if(rela.contains("_")){
+        rela = rela.split(/_/)[0]
+    }
+    return rela == thisMod ? "" : rela
+}
+static String getRelaTypeName(String rela, String thisMod, String colName) {
+    String relaModeName = getRelaModeName(rela, thisMod)
+    if(isNotEmpty(relaModeName)){
+        return javaName(rela, true)
+    }
+    return javaName(thisMod + "_" + colName.replace("_id", ""), true)
 }
 
-static String getRelaVarName(String rela, String colName) {
+static String getRelaVarName(String colName) {
     String name = colName.replace("_id", "")
-    return javaName((rela.length() == 0 ? '' : rela) + javaName(name, true), false)
+    return javaName(name, false)
 }
 
 static String getRelaPackageName(String rela, String thisPackageName, String thisMod, String entityTypeName) {
-    if (isNotEmpty(rela)) {
+    if (isNotEmpty(rela) && rela != thisMod) {
         return thisPackageName.replace(".$thisMod.", ".$rela.") + "." + entityTypeName
     }
     return null
@@ -747,4 +772,8 @@ static String getClearExport(it) {
     if (isNotEmpty(it.dict))
         clean = clearDict(clean, it.dict)
     return clean
+}
+
+static String getCleanComment(it){
+    return getClearExport(it).replace("编号","").replace("ID","") +  "名称"
 }
