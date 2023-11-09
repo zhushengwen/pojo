@@ -708,13 +708,20 @@ static String getRelaModeName(String rela, String thisMod) {
     rela = trimId(rela)
     if(rela.contains("_")){
         rela = rela.split(/_/)[0]
+    }else{
+        return ""
     }
 
     return rela.equals(thisMod) ? "" : rela
 }
 static String getRelaTypeName(String rela, String thisMod, String colName) {
     if(isNotEmpty(rela)){
-        return javaName(trimId(rela), true)
+        String modName = getRelaModeName(rela, thisMod)
+        if(isNotEmpty(modName)){
+            return javaName(trimId(rela), true)    
+        }else{
+            return javaName(thisMod + "_" + rela, true)   
+        }
     }
     return javaName(trimId(thisMod+"_"+colName), true)
 }
