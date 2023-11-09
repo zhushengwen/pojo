@@ -2,7 +2,6 @@ import com.intellij.database.model.DasTable
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.util.Case
 import com.intellij.database.util.DasUtil
-import org.apache.poi.xwpf.usermodel.BreakType
 
 import java.io.*
 import java.nio.file.Paths
@@ -370,7 +369,7 @@ def generate(out, className, fields, table) {
                     out.println "    @JsonProperty(value = \"${dictColName}\", index = ${index}" + ", access = JsonProperty.Access.READ_ONLY" + ")"
                     out.println "    @ApiModelProperty(\"${cleanCommentName}\")"
                     out.println "    ${methodSignature} {\n" +
-                            "        return AppUtils.ofNullable(${getRelaVarName(it.rela, it.colName)}, ${typeName}::getName);\n" +
+                            "        return AppUtils.ofNullable(${getRelaVarName(it.colName)}, ${typeName}::getName);\n" +
                             "    }"
                 }
 
@@ -706,18 +705,18 @@ static String removeRela(String common, String rela) {
 }
 
 static String getRelaModeName(String rela, String thisMod) {
-    rela = rela.replace("_id","")
+    rela = trimId(rela)
     if(rela.contains("_")){
         rela = rela.split(/_/)[0]
     }
-    return rela == thisMod ? "" : rela
+
+    return rela.equals(thisMod) ? "" : rela
 }
 static String getRelaTypeName(String rela, String thisMod, String colName) {
-    String relaModeName = getRelaModeName(rela, thisMod)
-    if(isNotEmpty(relaModeName)){
-        return javaName(rela, true)
+    if(isNotEmpty(rela)){
+        return javaName(trimId(rela), true)
     }
-    return javaName(thisMod + "_" + colName.replace("_id", ""), true)
+    return javaName(trimId(thisMod+"_"+colName), true)
 }
 
 static String getRelaVarName(String colName) {
