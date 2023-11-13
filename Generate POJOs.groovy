@@ -330,11 +330,11 @@ def generate(out, className, fields, table) {
 
             if(isNotEmpty(it.defexp)){
                 if(it.type == "Long"){
-                    defexp = " = ${it.defexp.replace("'","")}L"
+                    defexp = " = ${clearDefaultNum(it.defexp)}L"
                 }else if(it.type == "String"){
                     defexp = " = ${it.defexp.replace("'","\"")}"
                 }else if(it.type == "Double"){
-                    defexp = " = ${it.defexp.replace("'","")}"
+                    defexp = " = ${clearDefaultNum(it.defexp)}"
                 }
             }
 
@@ -767,6 +767,9 @@ static String clearJoin(String common, String name) {
 
 static String clearDict(String common, String name) {
     return common.replace("(字典:" + name + ")", "")
+}
+static String clearDefaultNum(String common) {
+    return common.replace("'", "").replace("(", "").replace(")", "")
 }
 
 static String getClearExport(it) {

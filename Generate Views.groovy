@@ -369,7 +369,9 @@ static String getCleanFieldComment(String comment) {
             .replace("(S)","")
 }
 static boolean tableIsNoPage(String comment) {
-    return comment.contains("(NP)")
+    def contains = comment.contains("(NP)")
+    if(!contains && !tableIsList(comment))return true
+    return contains
 }
 
 static boolean tableIsExport(String comment) {
