@@ -3,6 +3,7 @@ import com.intellij.database.model.ObjectKind
 import com.intellij.database.util.Case
 import com.intellij.database.util.DasUtil
 
+
 import java.io.*
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -117,11 +118,16 @@ def generate(out, className, fields, table) {
     out.println ""
     
     def baseName = className + "Base"
-    def dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName + "\\model"
+    def modPath = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi\\modules\\" + moduleName
+    new File(modPath).mkdir()
+    def dir = modPath + "\\model"
+    new File(dir).mkdir()
+    new File(dir + "\\base").mkdir()
     def file = new File(dir + "\\base", baseName + ".java")
     
     def extendsStr = "implements Serializable"
 
+    def ibaseWriter = null
     if (tableHaveBase(comment)) {
         if (!file.exists()) {
             PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
@@ -131,23 +137,26 @@ def generate(out, className, fields, table) {
             } else if (count == 6) {
                 baseExtendsStr = "extends CommonEntity "
             }
+            baseExtendsStr += "implements I$baseName "
+
             printWriter.withPrintWriter { out2 ->
-                out2.println "package com.jeiat.itapi.modules.${moduleName}.model.base;\n" +
+                out2.println "package ${packageName}.base;\n" +
                         "\n" +
                         "import com.jeiat.itapi.common.base.BaseEntity;\n" +
                         "import com.jeiat.itapi.common.base.CommonEntity;\n" +
-                        "import $packageName.$className;\n" +
+                        "import ${packageName}.$className;\n" +
+                        "import ${packageName}.base.meta.I${baseName};\n" +
                         "import lombok.Data;\n" +
                         "import lombok.EqualsAndHashCode;\n" +
+                        "import javax.persistence.MappedSuperclass;\n" +
                         "\n" +
                         "import java.io.Serializable;\n" +
                         "import java.util.List;\n" +
                         "\n" +
                         "@Data\n" +
+                        "@MappedSuperclass\n" +
                         "@EqualsAndHashCode(callSuper = false)\n" +
                         "public abstract class  $baseName $baseExtendsStr {\n" +
-                        "\n" +
-                        "\n" +
                         "\n" +
                         "\n" +
                         "\n" +
@@ -158,11 +167,16 @@ def generate(out, className, fields, table) {
                         "        }\n" +
                         "    }\n" +
                         "}\n"
-
             }
-        }
-    }
 
+        }
+        //创建meta目录
+        def baseDir = new File(dir + "\\base\\meta")
+        baseDir.mkdir()
+        def ibase = new File(baseDir, "I${baseName}.java")
+        ibaseWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(ibase), "UTF-8"))
+        writeLine(ibaseWriter, "package ${packageName}.base.meta;\n")
+    }
     def hasBase = false
     if (file.exists()) {
         hasBase = true
@@ -177,16 +191,31 @@ def generate(out, className, fields, table) {
         }
 
         if (isNotEmpty(it.rela)) {
-            def relaPackageName = getRelaPackageName(getRelaModeName(it.rela, moduleName), packageName, moduleName, getRelaTypeName(it.rela, moduleName, it.colName))
+            def typeName = getRelaTypeName(it.rela, moduleName, it.colName)
+            def relaPackageName = getRelaPackageName(getRelaModeName(it.rela, moduleName), packageName, moduleName, typeName)
             if (isNotEmpty(relaPackageName)) {
-                out.println "import $relaPackageName;"
+                String string = "import $relaPackageName;"
+                out.println string
+                writeLine(ibaseWriter, string)
+            }else{
+                writeLine(ibaseWriter, "import ${packageName}.${typeName};")
             }
+        }else if("".equals(it.rela)){
+            def typeName = getRelaTypeName(it.rela, moduleName, it.colName)
+            writeLine(ibaseWriter, "import ${packageName}.${typeName};")
         }
+
         if (isNotEmpty(it.join)) {
             String relaPackageName = it.join.split(/_/)[0]
-            relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, javaName(it.join, true))
+
+            def typeName = javaName(it.join, true)
+            relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, typeName)
             if (isNotEmpty(relaPackageName)) {
-                out.println "import $relaPackageName;"
+                String string = "import $relaPackageName;"
+                out.println tring
+                writeLine(ibaseWriter, string)
+            }else{
+                writeLine(ibaseWriter, "import ${packageName}.${typeName};")
             }
         }
     }
@@ -199,6 +228,8 @@ def generate(out, className, fields, table) {
         if (isExport) {
             out.println "import com.alibaba.excel.annotation.format.DateTimeFormat;"
         }
+
+        writeLine(ibaseWriter, "import java.util.Date;")
     }
     if (isExport) {
         out.println "import com.alibaba.excel.annotation.ExcelProperty;"
@@ -215,18 +246,23 @@ def generate(out, className, fields, table) {
     }
 
     out.println ""
-    out.println "/**\n" +
+
+    String warning = "/**\n" +
             " * Date " + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + "\n" +
             " * !!THIS FILE WILL BE REWRITE,SO IT'S READONLY,DO NOT CHANGE IT!!\n" +
             " * if you want to change it\n" +
             " * please extend it in it's baseclass ${className}Base\n" +
             " */"
-
+    out.println warning
     out.println ""
 //  out.println "@Setter"
 //  out.println "@Getter"
 //  out.println "@ToString"
 
+    writeLine(ibaseWriter, "")
+    writeLine(ibaseWriter, warning)
+    writeLine(ibaseWriter, "")
+    writeLine(ibaseWriter, "public interface I$baseName {")
 
     out.println "@Data"
     out.println "@Entity"
@@ -339,6 +375,7 @@ def generate(out, className, fields, table) {
             }
 
             out.println "    private ${it.type} ${it.name}${defexp};"
+            writeLine(ibaseWriter, "    ${it.type} get${javaName(it.name,true)}();")
 
             if (it.rela != null) {
                 out.println ""
@@ -348,6 +385,8 @@ def generate(out, className, fields, table) {
                 out.println "    @JoinColumn(name = \"" + it.colName + "\", insertable = false, updatable = false)"
                 def typeName = getRelaTypeName(it.rela, moduleName, it.colName)
                 out.println "    private " + typeName + " " + getRelaVarName(it.colName) + ";"
+
+                writeLine(ibaseWriter, "    " + typeName + " get" + javaName(getRelaVarName(it.colName),true) + "();")
 
                 index = index + 1
                 out.println ""
@@ -371,6 +410,8 @@ def generate(out, className, fields, table) {
                     out.println "    ${methodSignature} {\n" +
                             "        return AppUtils.ofNullable(${getRelaVarName(it.colName)}, ${typeName}::getName);\n" +
                             "    }"
+
+                    writeLine(ibaseWriter, "    String get${javaDictColName}();")
                 }
 
             }
@@ -393,6 +434,7 @@ def generate(out, className, fields, table) {
                 out.println "    private String $javaDictColName;"
                 it.dictColName = dictColName
 
+                writeLine(ibaseWriter, "    String get${javaName(javaDictColName,true)}();")
             }
 
             if (isNotEmpty(it.join)) {
@@ -423,6 +465,8 @@ def generate(out, className, fields, table) {
                     out.println "    public String get${javaDictColName}() {\n" +
                             "        return AppUtils.ofNullable(${javaName(it.join, false)}, ${javaName(it.join, true)}::getName);\n" +
                             "    }"
+
+                    writeLine(ibaseWriter, "    String get${javaName(javaDictColName,true)}();")
                 }
             }
         }
@@ -507,6 +551,9 @@ def generate(out, className, fields, table) {
     }
     out.println "    }"
     out.println "}"
+
+    writeLine(ibaseWriter, "}")
+    closeWrite(ibaseWriter)
 }
 
 def calcFields(table) {
@@ -720,10 +767,11 @@ static String getRelaTypeName(String rela, String thisMod, String colName) {
         if(isNotEmpty(modName)){
             return javaName(trimId(rela), true)    
         }else{
-            return javaName(thisMod + "_" + rela, true)   
+            return javaName(rela, true)   
         }
     }
-    return javaName(trimId(thisMod+"_"+colName), true)
+
+    return javaName(trimId(thisMod + "_" + colName), true)
 }
 
 static String getRelaVarName(String colName) {
@@ -785,4 +833,16 @@ static String getClearExport(it) {
 
 static String getCleanComment(it){
     return getClearExport(it).replace("编号","").replace("ID","") +  "名称"
+}
+
+static void writeLine(PrintWriter out,String line){
+    if(out != null){
+        out.println line
+    }
+}
+
+static void closeWrite(PrintWriter out){
+    if(out != null){
+        out.close()
+    }
 }

@@ -36,6 +36,7 @@ def generate(table, dir) {
         moduleSub = "\\modules\\" + moduleName
     }
     dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi"+moduleSub+"\\repo"
+    new File(dir).mkdir()
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + "Repository.java")), "UTF-8"))

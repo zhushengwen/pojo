@@ -39,6 +39,7 @@ def generate(table, dir) {
         moduleSub = "\\modules\\" + moduleName
     }
     dir = getProjectName(PROJECT.toString()) + "\\src\\main\\java\\com\\jeiat\\itapi" + moduleSub + "\\rest"
+    new File(dir).mkdir()
     def className = javaClassName(table.getName(), true)
     packageName = getPackageName(dir)
     def s = packageName.split(/\./)
