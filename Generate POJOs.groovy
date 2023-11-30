@@ -213,7 +213,7 @@ def generate(out, className, fields, table) {
             relaPackageName = getRelaPackageName(relaPackageName, packageName, moduleName, typeName)
             if (isNotEmpty(relaPackageName)) {
                 String string = "import $relaPackageName;"
-                out.println tring
+                out.println string
                 writeLine(ibaseWriter, string)
             }else{
                 writeLine(ibaseWriter, "import ${packageName}.${typeName};")
