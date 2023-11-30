@@ -49,6 +49,7 @@ def generate(table) {
     fields.each() {
         checkFieldCommonent(it.comment, it.colName, tableName)
     }
+
     packageName = getPackageName(dir)
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, className + ".java")), "UTF-8"))
     printWriter.withPrintWriter { out -> generate(out, className, fields, table) }
