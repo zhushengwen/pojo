@@ -134,11 +134,14 @@ def generate(out, className, fields, table) {
             PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
             def baseExtendsStr = extendsStr
             if (count == 4 || count == 5) {
-                baseExtendsStr = "extends BaseEntity "
+                baseExtendsStr = "extends BaseEntity implements "
             } else if (count == 6) {
-                baseExtendsStr = "extends CommonEntity "
+                baseExtendsStr = "extends CommonEntity implements "
+            }else{
+                baseExtendsStr += ", "
             }
-            baseExtendsStr += "implements I$baseName "
+
+            baseExtendsStr += "I$baseName "
 
             printWriter.withPrintWriter { out2 ->
                 out2.println "package ${packageName}.base;\n" +
