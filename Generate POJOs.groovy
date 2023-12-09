@@ -328,20 +328,36 @@ def generate(out, className, fields, table) {
             out.println "    " + (isIgnore ? "//" : "") + "@JsonProperty(value = \"${it.colName}\", index = ${index}" + (it.isId || isShow ? ", access = JsonProperty.Access.READ_ONLY" : "") + ")"
             if (it.type == "Date") out.println "    @JsonFormat(pattern=\"$datePattern\",timezone = \"GMT+8\")"
             // 输出成员变量
-            if (isNotEmpty(it.comment)) {
-                def required = ""
-                if (!it.isId && it.notNull && !isShow) required = ", required = true"
-                def noModify = ""
-                if (!it.isId && (isIgnore || isNja || isShow)) noModify = " [只读]"
-                out.println "    @ApiModelProperty(value = \"${it.comment}${dpS}${noModify}\"${required})"
-                if (tableIsExport(comment)) {
-                    String excelCommon = getClearExport(it)
-                    out.println "    @ExcelProperty(\"${excelCommon}\")"
-                    if ((it.type == "Date")) {
-                        out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
-                    }
+            String defexp = ""
+            String defStr = ""
+            if(isNotEmpty(it.defexp)){
+                String defval = ""
+                if(it.type == "Long"){
+                    defval = clearDefaultNum(it.defexp)
+                    defexp = " = ${defval}L"
+                }else if(it.type == "String"){
+                    defval = it.defexp.replace("'","")
+                    defexp = " = \"${defval}\""
+                }else if(it.type == "Double"){
+                    defval = clearDefaultNum(it.defexp)
+                    defexp = " = ${defval}"
+                }
+                defStr = " [默认:" + defval + "]"
+            }
+            def required = ""
+            if (!it.isId && it.notNull && !isShow) required = ", required = true"
+            def noModify = ""
+            if (!it.isId && (isIgnore || isNja || isShow)) noModify = " [只读]"
+
+            out.println "    @ApiModelProperty(value = \"${it.comment}${dpS}${noModify}${defStr}\"${required})"
+            if (tableIsExport(comment)) {
+                String excelCommon = getClearExport(it)
+                out.println "    @ExcelProperty(\"${excelCommon}\")"
+                if ((it.type == "Date")) {
+                    out.println "    @DateTimeFormat(\"yyyy-MM-dd\")"
                 }
             }
+
             if (!it.isId && !isShow) {
                 if (isIgnore)
                     out.println "    @JsonIgnore"
@@ -363,18 +379,6 @@ def generate(out, className, fields, table) {
                     if (it.length != null && it.length > 0) out.println "    @ByteMaxLength(max = ${it.length})"
                 } else {
                     if (it.notNull && !it.isId) out.println "    @NotNull"
-                }
-            }
-            String defexp = ""
-
-
-            if(isNotEmpty(it.defexp)){
-                if(it.type == "Long"){
-                    defexp = " = ${clearDefaultNum(it.defexp)}L"
-                }else if(it.type == "String"){
-                    defexp = " = ${it.defexp.replace("'","\"")}"
-                }else if(it.type == "Double"){
-                    defexp = " = ${clearDefaultNum(it.defexp)}"
                 }
             }
 
@@ -550,7 +554,7 @@ def generate(out, className, fields, table) {
             out.println "        //关联表: ${it.join}"
             out.println "        public static void join${colName}(List<${className}> list) {\n" +
                     "            EntityJoiner.join(list, ${className}::get${javaClassName(it.colName, true)}, ${className}::get${javaClassName(it.join, true)});\n" +
-                    "        }\n"
+                    "        }"
         }
     }
     out.println "    }"
